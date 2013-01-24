@@ -1,0 +1,28 @@
+//   FIR filter design using the window method - arbitrary filter shape.
+//   FIR2(N,F,M,NF,B) designs an N'th order FIR digital filter with the
+//   frequency response specified by vectors F and M (size NF) and returns the
+//   filter coefficients in length N+1 vector B.  Vectors F and M specify
+//   the frequency and magnitude breakpoints for the filter such that
+//   PLOT(F,M) would show a plot of the desired frequency response.
+//   The frequencies in F must be between 0.0 < F < 1.0, with 1.0
+//   corresponding to half the sample rate. They must be in increasing
+//   order and start with 0.0 and end with 1.0. 
+//
+//   The filter B is real, and has linear phase, i.e., even symmetric 
+//   coefficients obeying B(k) =  B(N+2-k), k = 1,2,...,N+1.
+//
+//   FIR2 uses a Hamming window.
+
+void fir2(int n, double *f,double *m, int nf, double *b);
+
+// freqz make frequency filter response from filter coefficients
+// Inputs:
+// n - filter order (vector b has size n+1)
+// b - vector of filter coefficients
+// nf - size of vectors f and a (must be power of 2 : 128, 256, 512,1024 ...)
+// Outputs:
+// f - vector of response frecuenses 
+// a - vector of response magnitudes
+
+void freqz(int n, double *f,double *a, int nf, double *b);
+
