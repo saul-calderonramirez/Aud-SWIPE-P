@@ -1,0 +1,462 @@
+/*
+ * Name: AudSWIPE-P
+ * Authors: Prof. Arturo Camacho
+ * 			Bsc. Saul Calderon
+ * 			Bsc. Gabriel Alvarado
+ * General Description: Parallel C implementation of the AudSWIPE algorithm, originally
+ * implemented in MATLAB
+ * Archive Description: MPI wrapper to pass MATLAB like matrixs and vectors
+ */
+#include "MPI_Matlab_Communicator.h"
+#define VECTOR_TAG 911
+#define MATRIX_TAG 007
+#define DOUBLE_TAG 117
+#define DEBUG 0
+#define LEADER 0
+
+MPI_Comm communicator = MPI_COMM_WORLD;
+int numberProcs = 1;
+/*
+* Sends a vector to the specific proccess with the receiver Id
+* @param receiverId, the id of the proccess that will receive the array
+* @param communicator, the channel of the communication
+* @param array, the array to send
+*/
+void sendVector(int receiverId,  vector array ){
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		MPI_Request request, request2;
+		int size = array.x;
+		//sends the size of the array first
+		MPI_Send( &size, 1, MPI_INT, receiverId, VECTOR_TAG, communicator);
+		//Sends the array
+		MPI_Send( array.v, size, MPI_DOUBLE, receiverId, VECTOR_TAG, communicator);
+	}
+}
+/*
+* Receives vector from the specific proccess with the sender Id
+* @param senderId, the id of the proccess that sent  the array
+* @param communicator, the channel of the communication
+* @param array, the pointer where the received array will be stored
+*/
+void receiveVector(int senderId, vector* ptrArray ){	
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		int size = 0;
+		MPI_Status status;
+		//Receives the size of the array first
+		MPI_Recv(&size, 1, MPI_INT, senderId, VECTOR_TAG, communicator, &status);
+		//Receives the array
+		*ptrArray = zerov( size );
+		MPI_Recv(ptrArray -> v, size, MPI_DOUBLE, senderId, VECTOR_TAG, communicator, &status);
+	}
+}
+
+/*
+* Executes the MPI function reduce
+* @param proccessId, the id of the proccess that executes the operation
+* @param communicator, the channel of the communication
+* @param array, the array that will be send
+* @param operation, the operation to be executed with the array as the input and result as the output
+* @param result, the result of the operation
+*
+*/
+void reduceVector(int proccessId, vector array, MPI_Op operation, vector* result){
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		MPI_Reduce(array.v, result->v, array.x, MPI_DOUBLE, operation, proccessId, communicator);
+	}
+}
+
+/*
+* Executes the MPI function reduce
+* @param proccessId, the id of the proccess that executes the operation
+* @param communicator, the channel of the communication
+* @param M, the matrix that will be send
+* @param operation, the operation to be executed with the array as the input and result as the output
+* @param resultM, the result of the operation
+*
+*/
+void reduceMatrix(int proccessId, matrix M, MPI_Op operation, matrix* resultM){
+	numberProcs = getNumberProcesses();
+
+	if(numberProcs > 1){
+		vector extendedM = zerov( M.x * M.y );
+		vector extendedR = zerov( M.x * M.y );
+		int i, j;
+		int k = 0;
+		//Translates from Matrix to vector
+		for( i = 0; i < M.x; ++i ){
+			for( j = 0; j < M.y; ++j){
+				extendedM.v[ k++ ] = M.m[ i ][ j ];
+			}
+		}
+		MPI_Reduce(extendedM.v, extendedR.v, extendedM.x, MPI_DOUBLE, operation, proccessId, communicator);
+		//Translates from vector to matrix
+		k = 0;
+		for( i = 0; i < M.x; ++i ){
+			for( j = 0; j < M.y; ++j){
+				resultM -> m[ i ][ j ] = extendedR.v[ k++ ];
+			}
+		}
+	}
+}
+
+
+/*
+* Broadcasts a vector to the children
+* @param numberOfChildren, children number
+* @param communicator, the channel of the communication
+* @param array, the array that will be send
+*/
+vector broadcastVector(int procId, vector array){
+	//we cannot send one matrix at once, since the rows are not contiguos
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		int i;
+		if(DEBUG == 1)printf("BroadcastVector: init: %d\n", procId);
+		int x = array.x;
+		//sends the row number
+		if(DEBUG == 1)printf("Broadcast: sending/rec dimension1: %d\n", procId);
+		MPI_Bcast( &x, 1, MPI_INT, 0,  communicator);
+		//sends the array
+		if(procId != 0){
+			array = zerov( x );
+		}
+		if(DEBUG == 1)printf("Broadcast: sending/rec array: %d\n", procId);
+		MPI_Bcast( array.v, x, MPI_DOUBLE, 0, communicator);
+		if(DEBUG == 1)printf("Broadcast: array received/sent: %d\n", procId);
+	}
+	return array;
+}
+
+
+/*
+* Broadcasts a matrix to the children
+* @param numberOfChildren, children number
+* @param communicator, the channel of the communication
+* @param M, the matrix that will be send
+*/
+matrix broadcastMatrix(int procId, matrix M){
+	//we cannot send one matrix at once, since the rows are not contiguos
+	matrix receivedM = M;
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		if(DEBUG == 1)printf("Broadcast: init: %d\n", procId);
+		int i, j, k;
+		vector extendedM;
+		if(procId == 0){
+			//in case that it is the sender
+			extendedM = zerov( M.x * M.y );
+			k = 0;
+			for( i = 0; i < M.x; ++i ){
+				for( j = 0; j < M.y; ++j){
+					extendedM.v[ k++ ] = M.m[ i ][ j ];
+				}
+			}
+		}
+		else{
+			M = zerom(2,2);
+		}
+		int x = M.x;
+		int y = M.y;
+		//sends the row number
+		if(DEBUG == 1)printf("Broadcast: sending/rec dimension1: %d\n", procId);
+		MPI_Bcast( &x, 1, MPI_INT, 0,  communicator);
+		if(DEBUG == 1)printf("Broadcast: sending/rec dimension2: %d\n", procId);
+		//sends the column number
+		MPI_Bcast( &y, 1, MPI_INT, 0, communicator);
+		//sends the array
+		if(procId != 0){
+			extendedM = zerov( x * y );
+		}
+		if(DEBUG == 1)printf("Broadcast: sending/rec array: %d\n", procId);
+		MPI_Bcast( extendedM.v, extendedM.x, MPI_DOUBLE, 0, communicator);
+		if(DEBUG == 1)printf("Broadcast: array received/sent: %d\n", procId);
+		k = 0;
+		receivedM = zerom( x, y );
+		for( i = 0; i < x; ++i ){
+			for( j = 0; j < y; ++j){
+				receivedM.m[ i ][ j ] = extendedM.v[ k++ ];
+			}
+		}
+	}
+	return receivedM;
+}
+
+/*
+* Sends a Matrix to the specific proccess with the receiver Id
+* @param receiverId, the id of the proccess that will receive the array
+* @param communicator, the channel of the communication
+* @param matrix, the matrix to send
+*/
+void sendMatrix(int receiverId, matrix M ){
+	//we cannot send one matrix at once, since the rows are not contiguos
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		MPI_Request request, request2;
+		vector extendedM = zerov( M.x * M.y );
+		int i, j;
+		int k = 0;
+		for( i = 0; i < M.x; ++i ){
+			for( j = 0; j < M.y; ++j){
+				extendedM.v[ k++ ] = M.m[ i ][ j ];
+			}
+		}
+		//sends the row number
+		MPI_Send( &M.x, 1, MPI_INT, receiverId, MATRIX_TAG, communicator);
+		//sends the column number
+		MPI_Send( &M.y, 1, MPI_INT, receiverId, MATRIX_TAG, communicator);
+		//sends the array
+		sendVector( receiverId, extendedM );
+	}
+}
+
+/*
+* Receives the matrix from the specific proccess with the sender Id
+* @param senderId, the id of the proccess that sent  the array
+* @param communicator, the channel of the communication
+* @param matrix, the pointer where the received matrix will be stored
+*/
+void receiveMatrix(int senderId, matrix* M ){
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		int x, y;
+		int k = 0;
+		int i, j;
+		MPI_Status status;
+		vector array = zerov(2);
+		//procId a vector that contains the rows of the original matrix contiguos
+		//procId the row number
+		MPI_Recv(&x, 1, MPI_INT, senderId, MATRIX_TAG, communicator, &status);
+		//procId the column number
+		MPI_Recv(&y, 1, MPI_INT, senderId, MATRIX_TAG, communicator, &status);
+		//procId the array
+		receiveVector( senderId, &array );
+		*M = zerom( x, y );
+		for( i = 0; i < x; ++i ){
+			for( j = 0; j < y; ++j ){
+				M -> m[ i ][ j ] = array.v[ k++ ];
+			}
+		}
+	}
+}
+
+/*
+* Broadcasts a double to the children
+* @param numberOfChildren, children number
+* @param communicator, the channel of the communication
+* @param number, the number that will be send
+*/
+double broadcastDouble( double number ){
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		MPI_Bcast( &number, 1, MPI_DOUBLE, 0,  communicator);
+	}
+	return number;
+}
+
+/*
+* Sends a Double to the specific proccess with the receiver Id
+* @param receiverId, the id of the proccess that will receive the array
+* @param communicator, the channel of the communication
+* @param number, the number to send
+*/
+void sendDouble(int receiverId, double number){
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		MPI_Send( &number, 1, MPI_DOUBLE, receiverId, DOUBLE_TAG, communicator);
+	}
+}
+
+/*
+* Receives the double from the specific proccess with the sender Id
+* @param senderId, the id of the proccess that sent  the array
+* @param communicator, the channel of the communication
+* @param double, the pointer where the received double will be stored
+*/
+void receiveDouble(int senderId, double* number ){
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		MPI_Status status;
+		//Receives the size of the array first
+		MPI_Recv( number, 1, MPI_DOUBLE, senderId, DOUBLE_TAG, communicator, &status);
+	}
+}
+
+/*
+*Creates the received number of processes, with the children in one group and the parent in other one
+*@param np, number of processes to spawn
+*@param argv, arguments for the executable
+*/
+void createProcesses( int np,  char *argv[], char* nameExecutable ){
+	MPI_Comm universeComm, interComm, parentComm;	
+	MPI_Comm_get_parent( &parentComm );
+	int myid = getProcessId();
+	//communicator = MPI_COMM_WORLD;
+	//is the parent
+	if(parentComm == MPI_COMM_NULL){
+		if(np > 0){
+			numberProcs = np + 1;
+			char *cmds[np];
+			MPI_Info infos[np];
+			int errcodes[ np ];
+			char** argvs[ np ];
+			int maxProcs[ np ];
+			int i = 0;
+			for( i = 0; i < np; ++i ){
+				cmds[ i ] = nameExecutable;
+				infos[ i ] = MPI_INFO_NULL;
+				argvs[ i ] = argv;
+				maxProcs[ i ] = 1;
+			}
+			MPI_Comm_spawn_multiple( np, cmds, argvs, maxProcs, infos, 0, MPI_COMM_WORLD, &interComm, errcodes );
+			//Merges the intercoms
+			MPI_Intercomm_merge(  interComm, 0, &universeComm );
+		}
+	}
+	else{
+		//Merges the intercoms
+		MPI_Intercomm_merge(  parentComm, 1, &universeComm );
+	}
+	//stores the communicator
+	communicator = universeComm;
+}
+
+/*
+*Creates the received number of processes, with the children in one group and the parent in other one, designed for the ECCI's cluster
+*@param np, number of processes to spawn
+*@param argv, arguments for the executable
+*/
+void createProcessesCluster( int np,  char *argv[], char* nameExecutable ){
+	char* nodes[4] = { "arenal.ecci.ucr.ac.cr", "compute-0-0", "compute-0-1", "compute-0-2" };
+	MPI_Comm universeComm, interComm, parentComm;
+	universeComm = MPI_COMM_NULL;
+	MPI_Comm_get_parent( &parentComm );
+	communicator = MPI_COMM_WORLD;
+	//is the parent
+	if(parentComm == MPI_COMM_NULL ){
+		if(np > 0){
+			numberProcs = np + 1;
+			char *cmds[np];
+			MPI_Info infos[np];
+			int errcodes[ np ];
+			char** argvs[ np ];
+			int maxProcs[ np ];
+			int i = 0;
+			for( i = 0; i < np; ++i ){
+				cmds[ i ] = nameExecutable;
+				MPI_Info_create( &infos[ i ] );
+				int p = i % 4;
+				MPI_Info_set( infos[ i ], "host", nodes[ p ] );
+				argvs[ i ] = argv;
+				maxProcs[ i ] = 1;
+			}
+
+			MPI_Comm_spawn_multiple( np, cmds, argvs, maxProcs, infos, 0, MPI_COMM_WORLD, &interComm, errcodes );
+			//Merges the intercoms
+			MPI_Intercomm_merge(  interComm, 0, &universeComm );
+		}
+	}
+	else{
+		//Merges the intercoms
+		MPI_Intercomm_merge(  parentComm, 1, &universeComm );
+	}
+	//stores the communicator
+	communicator = universeComm;
+}
+/*
+*Returns wether the current process is the parent
+*@return 1 if so, 0 otherwise
+*/
+int isParent(){
+	MPI_Comm parentComm;	
+	MPI_Comm_get_parent( &parentComm );
+	return (parentComm == MPI_COMM_NULL);
+}
+
+
+/*
+*Returns the current process id
+*@return process id
+*/
+int getProcessId(){
+	int myid = 0;
+	//if the communicator is null, the operation is invalid
+	numberProcs = getNumberProcesses();
+	if(numberProcs > 1){
+		assert (communicator != MPI_COMM_NULL);
+		MPI_Comm_rank( communicator, &myid );
+	}
+	return myid;
+}
+
+/*
+*Returns the number of processes
+*@return process number
+*/
+int getNumberProcesses(){
+	if(!isParent()){
+		MPI_Comm_size( communicator, &numberProcs );
+	}
+	return numberProcs;
+}
+
+/*
+*initializes MPI
+*@param argc
+*@param argv
+*/
+void initMPI(int argc, char *argv[]){
+	MPI_Init( &argc, &argv );
+}
+
+
+/*
+*Generates the processes workload
+*@param paralelismlevel, 1 maximum, 0 minimum
+*@param numberOfWs, number of window sizes or total work units 
+*/
+matrix generateWindowSizesRanges(double paralelismLevel, int numberOfWs ){
+	int numberOfProcs, currentProc, i, firstW, lastW;
+	numberOfProcs = (int) (paralelismLevel * numberOfWs);
+	vector wsPerProc = zerov(numberOfProcs);
+	if(numberOfProcs == 0) numberOfProcs = 1;
+	matrix ranges = zerom( numberOfProcs, 2 );
+	if(DEBUG == 1)printf("\nNumberOfProcs %d\n", numberOfProcs);
+	//round up to ensure that every windows size is taken by all the processes
+	currentProc = 0; 
+	firstW = 0;
+	lastW = 0;
+
+	for(i = 0; i < numberOfWs; ++i){
+		wsPerProc.v[i % numberOfProcs]++;
+	}
+	int counter = 0;
+	for(i = 0; i < numberOfProcs;  ++i ){
+		counter += wsPerProc.v[i];
+		lastW = counter;
+		ranges.m[i][0] = firstW;
+		ranges.m[i][1] = lastW;
+
+		firstW = lastW;
+	}
+	if(DEBUG == 1)printf("\nCurrentProc %d\n", currentProc);
+	return ranges;
+}
+
+/*
+*Finalizes MPI and the slave processes
+*/
+void finalizeMPI(){
+	int id = getProcessId();
+	if(id != 0){
+		//The slave process finalizes its MPI enviroment
+		MPI_Finalize();
+		//it is killed
+		exit(EXIT_SUCCESS);
+	}
+	//The master process ends its MPI enviroment
+	MPI_Finalize();
+}
+
