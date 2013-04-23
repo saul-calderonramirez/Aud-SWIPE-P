@@ -23,7 +23,7 @@
 #define LEADER						0
 
 #define NOK                          0
-#define DEBUG						0
+#define DEBUG						1
 #define TRUE                         1
 #define FALSE                        0
 
@@ -598,6 +598,7 @@ vector aud_swipe_p(char wav[], double min, double max, double st, double dt, cha
 	vector p;
 	if( isParent() ){
 		startLocalClock(&totalTime);
+		//Calculates the ranges of processes to work and the X channel matrix
 		ranges = calculateWindowSizesAndCochleasResponses( wav, min, max, dt,  argv, paralelism, &X, &fsInfo );
 	}
 	createProcesses(  ranges.x - 1, argv, EXE_NAME);
@@ -612,6 +613,7 @@ vector aud_swipe_p(char wav[], double min, double max, double st, double dt, cha
 	*/
 	//starts the clock
 	startLocalClock(&clocks);
+	//Sends/ Receives the Channel matrix X 
 	X = broadcastMatrix(myid, X);
 	fsInfo = broadcastVector(myid,  fsInfo);
 	fs = fsInfo.v[0];
@@ -1040,12 +1042,9 @@ void executeAudSWIPE(int argc, char* argv[]){
 		//MPI is initialized
 		initMPI( argc, argv );
 		myid = getProcessId();
-		char* originalArgv[argc];
+		
 		int u;
-		for(u = 0; u < argc; ++u){
-			originalArgv[ u ] = malloc(sizeof(char) * 100);
-			strcpy(originalArgv[ u ], argv[ u ]);
-		}
+		
 		char output[] = "OUTPUT:\npitch_0\ttime_0\npitch_1\ttime_1\n...\t...\
 		\npitch_N\ttime_N\n\n";
 		char header[] = "SWIPE' pitch tracker, implemented in C by Kyle Gorman \
@@ -1081,7 +1080,7 @@ void executeAudSWIPE(int argc, char* argv[]){
 		char out[FILENAME_MAX] = "<STDOUT>";
 		char* ptrTestFile = NULL;
 		char testFileName[FILENAME_MAX] = "test_file.csv";
-
+		char ptrOptArgTemp[FILENAME_MAX];
 		int i = 0;
 		clocks = initClocks(11);
 		cycleClocks = initClocks(9);
@@ -1106,7 +1105,8 @@ void executeAudSWIPE(int argc, char* argv[]){
 					strcpy(out, optarg);
 					break;
 				case 'r':
-					min = atof(strtok(optarg, ":"));
+					strcpy(ptrOptArgTemp, optarg);
+					min = atof(strtok(ptrOptArgTemp, ":"));
 					max = atof(strtok(NULL, ":"));
 					break;
 				case 's':
@@ -1165,7 +1165,7 @@ void executeAudSWIPE(int argc, char* argv[]){
 			int k = 0;
 			while (fscanf(batch, "%s %s", wav, out) != EOF) {
 				fprintf(stderr, "%s -> %s ... ", wav, out);
-				vector p = aud_swipe_p(wav, min, max, st, dt, originalArgv, paralelism, ptrTestFile);
+				vector p = aud_swipe_p(wav, min, max, st, dt, argv, paralelism, ptrTestFile);
 				if (p.x == NOK) {
 					fprintf(stderr, "File or stream %s failed.\n", wav);
 					fclose(batch);
@@ -1180,7 +1180,7 @@ void executeAudSWIPE(int argc, char* argv[]){
 			exit(EXIT_SUCCESS);
 		}
 		else {
-			vector p = aud_swipe_p(wav, min, max, st, dt, originalArgv, paralelism, ptrTestFile);
+			vector p = aud_swipe_p(wav, min, max, st, dt, argv, paralelism, ptrTestFile);
 			if (p.x == NOK) {
 				fprintf(stderr, "File or stream %s failed.\n", wav);
 				fclose(batch);

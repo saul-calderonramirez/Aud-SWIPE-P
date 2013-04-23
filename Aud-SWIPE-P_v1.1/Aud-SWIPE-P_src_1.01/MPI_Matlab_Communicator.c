@@ -310,7 +310,9 @@ void createProcesses( int np,  char *argv[], char* nameExecutable ){
 				argvs[ i ] = argv;
 				maxProcs[ i ] = 1;
 			}
+			printf("Antes del primer SPAWNNNN %s\n", nameExecutable);
 			MPI_Comm_spawn_multiple( np, cmds, argvs, maxProcs, infos, 0, MPI_COMM_WORLD, &interComm, errcodes );
+			printf("Despues del primer SPAWNNNN\n");
 			//Merges the intercoms
 			MPI_Intercomm_merge(  interComm, 0, &universeComm );
 		}
