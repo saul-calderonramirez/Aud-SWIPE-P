@@ -1,0 +1,17 @@
+/*
+ * MPIMatlabCommunicator.h
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+
+#ifndef MPIMATLABCOMMUNICATOR_H_
+#define MPIMATLABCOMMUNICATOR_H_
+
+class MPI_Matlab_Communicator {
+public:
+	MPI_Matlab_Communicator();
+	virtual ~MPI_Matlab_Communicator();
+};
+
+#endif /* MPIMATLABCOMMUNICATOR_H_ */

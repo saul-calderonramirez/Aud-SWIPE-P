@@ -1,0 +1,20 @@
+/*
+ * MPIMatlabCommunicator.cpp
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+
+#include "MPIMatlabCommunicator.h"
+
+MPI_Matlab_Communicator::MPI_Matlab_Communicator() {
+	// TODO Auto-generated constructor stub
+
+}
+
+MPI_Matlab_Communicator::~MPI_Matlab_Communicator() {
+	// TODO Auto-generated destructor stub
+}
+
+
+

@@ -818,7 +818,7 @@ vector aud_swipe_p(char wav[], double min, double max, double st, double dt, cha
 		if(DEBUG==1)printf("\n	Calculating FFT for each segment of the cochlea at every window...\n");
 		if(DEBUG==1)printf("\n		Creating and Executing FFTW Plan (PARALLEL)...\n");
 		/*
-		 * Thread parallelization 3, each thread calculates the Enhanced spectrum or ESRAS for a window
+		 * Thread parallelization 2, each thread calculates the Enhanced spectrum or ESRAS for a window
 		 * */
 		fftw_plan plan = fftw_plan_dft_r2c_1d(ws.v[i], window, fo, FFTW_ESTIMATE); 
 		#pragma omp parallel for private(segm,ind,col, window, copia, fo)

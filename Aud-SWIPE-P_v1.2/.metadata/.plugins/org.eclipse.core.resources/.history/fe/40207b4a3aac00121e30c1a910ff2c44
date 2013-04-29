@@ -1,0 +1,21 @@
+/*
+ * includes.h
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+
+#ifndef INCLUDES_H_
+#define INCLUDES_H_
+#pragma once
+#include "Arrays.h"
+#include "MPIMatlabCommunicator.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "mpi.h"
+#include <assert.h>
+#include <cstdlib>
+#include <stdlib.h>
+#define DEBUG 0
+#endif /* INCLUDES_H_ */

@@ -1,0 +1,23 @@
+/*
+ * Arrays.h
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+
+#ifndef ARRAYS_H_
+#define ARRAYS_H_
+// vector stuff
+typedef struct                   { int x; double* v; } vector;
+
+vector                            makev(int);
+vector                            zerov(int);
+
+// matrix stuff
+typedef struct                   { int x; int y; double** m; } matrix;
+
+matrix                            makem(int, int);
+matrix                            zerom(int, int);
+
+
+#endif /* ARRAYS_H_ */

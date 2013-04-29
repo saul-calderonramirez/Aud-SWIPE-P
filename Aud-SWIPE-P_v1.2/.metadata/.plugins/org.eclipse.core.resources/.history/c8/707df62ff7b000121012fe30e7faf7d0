@@ -1,0 +1,59 @@
+
+
+#include <fftw3.h>   // http://www.fftw.org/
+#include <sndfile.h> // http://www.mega-nerd.com/libsndfile/
+#include "AuditiveSystem.h"
+#include "includes.h"
+#include "MPIMatlabCommunicator.h"
+#define EXE_NAME "aswipep"
+
+struct timespec start, end, startTotal, endTotal;
+clocksArray clocks, cycleClocks, totalTime;
+
+double soundLength;
+
+//MPI variables needed
+int myid;
+
+double timeCochlea, timeSendData, timeMisc, timeWsCycles, timePitchRec, timeTotal;
+double timesAudsys[7];
+/*
+ * Executes the AudSWIPE Algorithm
+ * @param argc, number of arguments
+ * @param argv, list of arguments
+ * */
+void executeAudSWIPEP(int argc, char* argv[]);
+
+/*
+* Primary utility function for each pitch extraction
+* @param wav, name of the input signal
+* @param paralelism, Paralelism level
+* @param min, Start of frequency range
+* @param max, End of frequency range
+* @param dt, time delta
+* @return vector, pitch array
+*/
+vector aud_swipe_p(char wav[], double min, double max, double st, double dt, char* argv[], double paralelism, char* testName);
+/*
+ * Gets the pitch candidates associated to the current window size
+ * @param i, current window size in the window size array
+ * @param ws, window sizes array
+ * @param d,
+ * @param ptrJ
+ * @param ptrK
+ * */
+void getPitchCandidatesOfWs(int i, vector ws, vector d, vector* ptrJ, vector* ptrK);
+/*
+ * Gets the Score matrix S for the current window size
+ * @param i, current window size in the window size array
+ * @param pc, Pitch candidates array
+ * @param X, matrix with the cochleas response
+ * @param fERBs, frequency array in the ERB scale
+ * @param d,
+ * @param S, Score matrix
+ * @param fs, sampling frequency
+ * @param p0,
+ * @param t, time vector
+ * */
+void getWsScoreMat(int i, vector ws, vector pc, matrix X, vector fERBs, vector d, matrix S, double fs, vector p0, vector t);
+matrix getWsLoudnessMat(int i, vector ws, vector n, matrix Xz, vector w, vector fERBs, vector fi, matrix W, int tamX);

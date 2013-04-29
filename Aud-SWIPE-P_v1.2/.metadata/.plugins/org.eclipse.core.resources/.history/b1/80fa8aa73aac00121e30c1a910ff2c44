@@ -1,0 +1,51 @@
+/*
+ * Arrays.c
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+#include "Arrays.h"
+#include <cstdlib>
+// create a vector of size xSz
+vector makev(int xSz) {
+    vector nw_vector;
+    nw_vector.x = xSz;
+    nw_vector.v = malloc(sizeof(double) * xSz);
+    return(nw_vector);
+}
+
+// make a vector of zeros of size xSz
+vector zerov(int xSz) {
+    int i;
+    vector nw_vector = makev(xSz);
+    for (i = 0; i < nw_vector.x; i++) {
+        nw_vector.v[i] = 0.;
+    }
+    return(nw_vector);
+}
+// matrix versions of the above
+
+matrix makem(int xSz, int ySz) {
+    int i;
+    matrix nw_matrix;
+    nw_matrix.x = xSz;
+    nw_matrix.y = ySz;
+    nw_matrix.m = malloc(sizeof(double*) * xSz);
+    for (i = 0; i < nw_matrix.x; i++) {
+        nw_matrix.m[i] = malloc(sizeof(double) * ySz);
+    }
+    return(nw_matrix);
+}
+
+matrix zerom(int xSz, int ySz) {
+    int i;
+    int j;
+    matrix nw_matrix = makem(xSz, ySz);
+    for (i = 0; i < nw_matrix.x; i++) {
+        for (j = 0; j < nw_matrix.y; j++) {
+            nw_matrix.m[i][j] = 0.;
+        }
+    }
+    return(nw_matrix);
+}
+

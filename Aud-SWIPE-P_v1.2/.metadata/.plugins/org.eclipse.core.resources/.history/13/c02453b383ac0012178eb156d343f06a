@@ -1,0 +1,29 @@
+/*
+ * AuditiveSystem.h
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+#include "includes.h"
+#include "Clocks.h"
+#ifndef AUDITIVESYSTEM_H_
+#define AUDITIVESYSTEM_H_
+/*
+*Calculate the filter of the middle and outter ear
+*Flattens the spectral envelope
+*@param n,
+*@param fs, the sampling frequency
+*@return vector, the resulting filter
+*/
+vector outmidear( int n, double fs);
+
+/*
+*Models the auditive system, archive's main function
+*@param x, input signal
+*@param samplerate, signal samplerate
+*@param time1,
+*@return matrix, A matrix with a signal per row, representing the cochlea's response to a different frequency band.
+*/
+matrix audsys(vector x, double samplerate, clocksArray *time1);
+
+#endif /* AUDITIVESYSTEM_H_ */

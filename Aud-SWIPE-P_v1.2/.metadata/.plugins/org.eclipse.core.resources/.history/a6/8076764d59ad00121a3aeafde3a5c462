@@ -1,0 +1,11 @@
+
+#include "AuditiveSystem.h"
+#include "includes.h"
+#include "MPIMatlabCommunicator.h"
+#define EXE_NAME "aswipep"
+/*
+ * Executes the AudSWIPE Algorithm
+ *@param argc, number of arguments
+ *@param argv, list of arguments
+ * */
+void executeAudSWIPE(int argc, char* argv[]);

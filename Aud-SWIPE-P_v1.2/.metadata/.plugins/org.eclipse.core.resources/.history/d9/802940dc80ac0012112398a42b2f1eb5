@@ -1,0 +1,26 @@
+/*
+ * Clocks.h
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+
+#ifndef CLOCKS_H_
+#define CLOCKS_H_
+
+
+#include <time.h>
+// vector stuff
+typedef struct {
+		int x;
+		double* v;
+} vector;
+
+typedef struct {
+	struct timespec start, end;
+	vector values;
+	int currentPosition;
+	char** tags;
+} clocksArray;
+
+#endif /* CLOCKS_H_ */

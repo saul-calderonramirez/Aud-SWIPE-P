@@ -1,0 +1,14 @@
+/*
+ * Clocks.h
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+
+#ifndef CLOCKS_H_
+#define CLOCKS_H_
+
+class Clocks {
+};
+
+#endif /* CLOCKS_H_ */

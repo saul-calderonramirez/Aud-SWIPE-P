@@ -1,0 +1,14 @@
+/*
+ * SPUtilities.h
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+
+#ifndef SPUTILITIES_H_
+#define SPUTILITIES_H_
+
+class SPUtilities {
+};
+
+#endif /* SPUTILITIES_H_ */
