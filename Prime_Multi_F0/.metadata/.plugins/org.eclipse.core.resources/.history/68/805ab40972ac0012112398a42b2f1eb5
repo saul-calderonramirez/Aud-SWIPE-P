@@ -1,0 +1,27 @@
+/*
+ * includes.h
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+
+#ifndef INCLUDES_H_
+#define INCLUDES_H_
+#pragma once
+
+
+#include <stdio.h>
+#include <string.h>
+#include "Arrays.h"
+#include "mpi.h"
+#include <assert.h>
+#include <stdlib.h>
+#include <math.h>
+
+#include <limits.h>
+#include <string.h>
+#include <stdlib.h>
+#define EXE_NAME "AudSWIPE_CPP"
+//#include "MPIMatlabCommunicator.h"
+#define DEBUG 0
+#endif /* INCLUDES_H_ */

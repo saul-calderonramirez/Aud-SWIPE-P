@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item value="336" key="DIALOG_WIDTH"/>
+		<item value="271" key="DIALOG_Y_ORIGIN"/>
+		<item value="215" key="DIALOG_X_ORIGIN"/>
+		<item value="585" key="DIALOG_HEIGHT"/>
+		<item value="1|Cantarell|11.0|0|GTK|1|" key="DIALOG_FONT_NAME"/>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item value="true" key="wrap"/>
+		<item value="true" key="casesensitive"/>
+		<item value="false" key="isRegEx"/>
+		<item value="false" key="incremental"/>
+		<item value="false" key="wholeword"/>
+		<item value="getWs" key="selection"/>
+		<list key="findhistory">
+			<item value="getWs"/>
+			<item value="getPitchCandidatesOfWs"/>
+			<item value="Harmonics_into_channels"/>
+			<item value="audsys"/>
+			<item value="calculateX"/>
+			<item value="getWsScoreMat"/>
+			<item value="tamX"/>
+			<item value="k.v"/>
+		</list>
+		<list key="replacehistory">
+			<item value="X.x"/>
+			<item value="ptrK-&gt;v"/>
+			<item value="ptrJ-&gt;v"/>
+			<item value="j-&gt;v"/>
+			<item value="ptrJ-&gt;x"/>
+			<item value="ptrJ"/>
+			<item value="ptrK"/>
+			<item value="ptrName"/>
+		</list>
+	</section>
+</section>

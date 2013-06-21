@@ -1,0 +1,156 @@
+/*
+ * MPIMatlabCommunicator.h
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+
+#ifndef MPIMATLABCOMMUNICATOR_H_
+#define MPIMATLABCOMMUNICATOR_H_
+#pragma once
+#include "includes.h"
+#include "mpi.h"
+#define VECTOR_TAG 911
+#define MATRIX_TAG 007
+#define DOUBLE_TAG 117
+
+
+MPI_Comm communicator;
+
+
+/*
+* Sends a vector to the specific proccess with the receiver Id
+* @param receiverId, the id of the proccess that will receive the array
+* @param communicator, the channel of the communication
+* @param array, the array to send
+*/
+void sendVector(int receiverId, vector array );
+/*
+* Receives vector from the specific proccess with the sender Id
+* @param senderId, the id of the proccess that sent  the array
+* @param communicator, the channel of the communication
+* @param array, the pointer where the received array will be stored
+*/
+void receiveVector(int senderId,  vector* array );
+
+/*
+* Executes the MPI function reduce
+* @param proccessId, the id of the proccess that executes the operation
+* @param communicator, the channel of the communication
+* @param array, the array that will be send
+* @param operation, the operation to be executed with the array as the input and result as the output
+* @param result, the result of the operation
+*
+*/
+void reduceVector(int proccessId,  vector array, MPI_Op operation, vector* result);
+
+/*
+* Broadcasts a vector to the children
+* @param procId, 0 if the process is sending data, other value it receives
+* @param communicator, the channel of the communication
+* @param array, the array that will be send
+*/
+vector broadcastVector(int procId,  vector array);
+
+/*
+* Sends a Matrix to the specific proccess with the receiver Id
+* @param receiverId, the id of the proccess that will receive the array
+* @param communicator, the channel of the communication
+* @param matrix, the matrix to send
+*/
+void sendMatrix(int receiverId,  matrix M );
+
+/*
+* Receives the matrix from the specific proccess with the sender Id
+* @param senderId, the id of the proccess that sent  the array
+* @param communicator, the channel of the communication
+* @param matrix, the pointer where the received matrix will be stored
+*/
+void receiveMatrix(int senderId,  matrix* M );
+
+/*
+* Broadcasts a matrix to the children
+* @param procId, 0 if the process is sending data, other value it procId
+* @param communicator, the channel of the communication
+* @param M, the matrix that will be send
+*/
+matrix broadcastMatrix(int numberOfChildren,  matrix M);
+
+/*
+* Executes the MPI function reduce
+* @param proccessId, the id of the proccess that executes the operation
+* @param communicator, the channel of the communication
+* @param M, the matrix that will be send
+* @param operation, the operation to be executed with the array as the input and result as the output
+* @param resultM, the result of the operation
+*
+*/
+void reduceMatrix(int proccessId,  matrix M, MPI_Op operation, matrix* resultM);
+/*
+* Broadcasts a double to the children
+* @param numberOfChildren, children number
+* @param communicator, the channel of the communication
+* @param number, the number that will be send
+*/
+double broadcastDouble(  double number);
+/*
+* Sends a Double to the specific proccess with the receiver Id
+* @param receiverId, the id of the proccess that will receive the array
+* @param communicator, the channel of the communication
+* @param number, the number to send
+*/
+void sendDouble(int receiverId,  double number);
+/*
+* Receives the double from the specific proccess with the sender Id
+* @param senderId, the id of the proccess that sent  the array
+* @param communicator, the channel of the communication
+* @param double, the pointer where the received double will be stored
+*/
+void receiveDouble(int senderId,  double* number );
+
+/*
+*Creates the received number of processes, with the children in one group and the parent in other one
+*@param np, number of processes to spawn
+*@param argv, arguments for the executable
+*/
+void createProcesses( int np,  char *argv[] );
+
+/*
+*Returns wether the current process is the parent
+*@return 1 if so, 0 otherwise
+*/
+int isParent();
+
+/*
+*Returns the current process id
+*@return process id
+*/
+int getProcessId();
+
+/*
+*initializes MPI
+*@param argc
+*@param argv
+*/
+void initMPI(int argc, char *argv[]);
+/*
+*Finalizes MPI
+*/
+void finalizeMPI();
+
+/*
+*Generates the processes workload
+*@param paralelismlevel, 1 maximum, 0 minimum
+*@param numberOfWs, number of window sizes or total work units
+*/
+void generateWindowSizesRanges(double paralelismLevel, int numberOfWs, matrix* ranges );
+
+/*
+*Creates the received number of processes, with the children in one group and the parent in other one, designed for the ECCI's cluster
+*@param np, number of processes to spawn
+*@param argv, arguments for the executable
+*/
+void createProcessesCluster( int np,  char *argv[] );
+
+
+#endif /* MPIMATLABCOMMUNICATOR_H_ */

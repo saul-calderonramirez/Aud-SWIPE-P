@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;AudSWIPE_CPP/src/runTests.c&apos; to &apos;TestFactory.c&apos;" description="Rename resource &apos;runTests.c&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/runTests.c" name="TestFactory.c" stamp="1367247697302" updateReferences="true"/>
+</session>

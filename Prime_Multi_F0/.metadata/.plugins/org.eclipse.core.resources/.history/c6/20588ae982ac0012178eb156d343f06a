@@ -1,0 +1,14 @@
+/*
+ * AuditiveSystem.h
+ *
+ *  Created on: Apr 23, 2013
+ *      Author: saul
+ */
+
+#ifndef AUDITIVESYSTEM_H_
+#define AUDITIVESYSTEM_H_
+
+class AuditiveSystem {
+};
+
+#endif /* AUDITIVESYSTEM_H_ */

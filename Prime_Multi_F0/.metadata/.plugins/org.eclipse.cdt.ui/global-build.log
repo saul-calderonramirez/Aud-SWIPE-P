@@ -1,0 +1,26 @@
+12:21:46 **** Incremental Build of configuration Debug for project AudSWIPE_CPP ****
+make all 
+Building file: ../src/AudSWIPEP.c
+Invoking: GCC C Compiler
+gcc -I/usr/include/mpi -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/AudSWIPEP.d" -MT"src/AudSWIPEP.d" -o "src/AudSWIPEP.o" "../src/AudSWIPEP.c"
+../src/AudSWIPEP.c: In function ‘pitchStrengthAllCandidates’:
+../src/AudSWIPEP.c:150:0: warning: ignoring #pragma omp parallel [-Wunknown-pragmas]
+../src/AudSWIPEP.c: In function ‘getWsLoudnessMat’:
+../src/AudSWIPEP.c:412:0: warning: ignoring #pragma omp parallel [-Wunknown-pragmas]
+Finished building: ../src/AudSWIPEP.c
+ 
+Building file: ../src/TestFactory.c
+Invoking: GCC C Compiler
+gcc -I/usr/include/mpi -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/TestFactory.d" -MT"src/TestFactory.d" -o "src/TestFactory.o" "../src/TestFactory.c"
+Finished building: ../src/TestFactory.c
+ 
+Building file: ../src/main.c
+Invoking: GCC C Compiler
+gcc -I/usr/include/mpi -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/main.d" -MT"src/main.d" -o "src/main.o" "../src/main.c"
+Finished building: ../src/main.c
+ 
+Building target: AudSWIPE_CPP
+Invoking: GCC C++ Linker
+mpicc -lm -lc -lblas -llapack -lfftw3 -lsndfile -fopenmp -lrt -o "AudSWIPE_CPP"  ./src/AudSWIPEP.o ./src/AuditiveSystem.o ./src/Clocks.o ./src/MPIMatlabCommunicator.o ./src/Matrix.o ./src/SPUtilities.o ./src/TestFactory.o ./src/UnitTestsMPI.o ./src/main.o   
+Finished building target: AudSWIPE_CPP
+ 

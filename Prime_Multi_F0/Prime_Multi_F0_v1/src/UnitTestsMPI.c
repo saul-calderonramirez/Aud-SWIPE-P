@@ -1,0 +1,86 @@
+//============================================================================
+// Name        : AudSWIPE_CPP.cpp
+// Author      : Saul Calderon, Gabriel Alvarado, Arturo Camacho
+// Version     :
+// Copyright   : AudSWIPE_P implemented in cpp
+// Description : Hello World in C++, Ansi-style
+//============================================================================
+
+#include "includes.h"
+#include "MPIMatlabCommunicator.h"
+#define NUM_SPAWNS 15
+#define SIZE_X 2
+#define SIZE_Y 4
+
+void printMatrix( matrix M ){
+	int i, j;
+	printf("\n");
+	for(i = 0; i < M.x; ++i){
+		for( j = 0; j < M.y; ++j ){
+			printf( "%f ", M.m[ i ][ j ] );
+		}
+		printf("\n");
+	}
+}
+
+void printVector( vector V ){
+	int i;
+	for(i = 0; i < V.x; ++i){
+		printf( "%f ", V.v[ i ] );
+	}
+}
+
+
+
+void testMPIS(int argc, char *argv[]){
+	//number of children
+	int np = NUM_SPAWNS;
+	//proccess id
+	int myid = -4;
+	//array to send
+	matrix X;
+	matrix sumX;
+	int j = 0;
+	int i = 0;
+	//This is the communicator group with the parent and all it's children
+	initMPI(argc, argv);
+	printf("Inits MPI\n");
+	createProcesses( np - 1, argv, EXE_NAME );
+	printf("Creates Processes MPI\n");
+	//The first proccesses creates it's children, one of them is going to be a parent in the group of children, hence is neccessary to create a new communications group that includes the parent and it's children
+	if (isParent()){
+		myid = getProcessId();
+		X = zerom(SIZE_X, SIZE_Y);
+		printf("I'm the parent: \n");
+		for(i = 0; i < SIZE_X; ++i){
+			for( j = 0; j < SIZE_Y; ++j ){
+				//The parent generates the data needed by the children
+					//everyone must have this array after the sending method
+					X.m[ i ][ j ] = j;
+
+			}
+		}
+		printf("Parent: Matrix filled, with id %d \n", myid);
+	}
+
+	//Broadcast from the root procces (0) to the rest
+	//CHILDREN Block
+	myid = getProcessId();
+	//The current child receives the data from the parent
+	//Uses the parentComm intercommunicator to communicate with the parent
+	//Receives the broadcasted array from the parent
+	X = broadcastMatrix( myid, X );
+	printf("Matrix received by: %d\n", myid);
+	sumX = zerom(SIZE_X, SIZE_Y);
+	reduceMatrix( 0, X, MPI_SUM, &sumX);
+	if( myid == 0 ){
+		//Sends the final result to the parent
+		printMatrix(sumX);
+		printf("Done! Printed by process: %d\n", myid);
+	}
+
+	fflush(stdout);
+	finalizeMPI();
+}
+
+

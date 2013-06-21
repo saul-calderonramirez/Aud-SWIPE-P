@@ -1,0 +1,14 @@
+//============================================================================
+// Name        : AudSWIPE_CPP.cpp
+// Author      : Saul Calderon, Gabriel Alvarado, Arturo Camacho
+// Version     :
+// Copyright   : AudSWIPE_P implemented in cpp
+// Description : Hello World in C++, Ansi-style
+//============================================================================
+#pragma once
+#include "includes.h"
+
+int main() {
+	printf("Hallo welt\n");
+	return 0;
+}
