@@ -76,7 +76,7 @@ vector pitchStrengthOneCandidate( vector f, matrix NL, double pc ){
 			}
 		}
 	}
-	//Apply envelope, envelope is not necessary in prime multi F0
+	//Apply envelope
 	double norm = 0;
 	for(i = 0; i < k.x; i++){
 		k.v[i] = k.v[i]*sqrt(1./f.v[i]);
@@ -92,7 +92,7 @@ vector pitchStrengthOneCandidate( vector f, matrix NL, double pc ){
 	//Compute pitch strength
 	for(i = 0; i < NL.x; i++){
 		for(j = 0; j < k.x; j++){
-		S.v[i] += NL.m[i][j] * k.v[j];
+		S.v[i] += NL.m[i][j]*k.v[j];
 		}
 	}
 	freeiv(primos);
@@ -831,7 +831,6 @@ vector aud_swipe_p(char wav[], double min, double max, double st, double dt, cha
 	freem(S);
 	// Only one process will continue working
 	finalizeMPI();
-	//For the moment Prime multi F0 must return the Score matrix. The pitch for the simultaneous N notes are the first N candidates with the hightest score
 	return(p);
 }
 
@@ -839,17 +838,8 @@ vector aud_swipe_p(char wav[], double min, double max, double st, double dt, cha
  * Receives the score matrix S and applies post processing required by prime multi F0 algorithm
  * @param S, score matrix, rows are pitch candidates, columns are the values in time
  */
-void processMatrixSprimeMultiF0(matrix S, vector pc){
-	/*
-	 * S = max ( 0 , S ) ;
-		for i = primes ( pc ( end ) / pc ( 1 ) ) ;
-		S = S - max ( 0 , interp1 ( pc , S , i * pc , ’ linear’ ,0));
-		end
-		S = max ( 0 , S ) ;
-	 *
-	 * */
+void processMatrixSprimeMultiF0(matrix S){
 	int x, y;
-	//Eliminates negatives
 	for(x = 0; x < S.x; ++x ){
 		for(y = 0; y < S.y; ++y){
 			if(S.m[x][y] < 0){
@@ -857,8 +847,7 @@ void processMatrixSprimeMultiF0(matrix S, vector pc){
 			}
 
 		}
-	//substract prime factors of each pitch candidate
-	//intvector primos = primes(n);//This is A-SWIPE'
+
 	}
 
 }
