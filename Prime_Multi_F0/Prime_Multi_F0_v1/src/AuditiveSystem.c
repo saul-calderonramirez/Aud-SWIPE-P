@@ -89,6 +89,8 @@ matrix Harmonics_into_channels(vector x, double fs, vector f){
 	//matrix X, channels per time
 	matrix X = makem(f.x, x.x);
 	for(i = 0; i < f.x; i++) f.v[i] = i + 1.5;
+	//erbs2hz is not needed in Prime multi F0
+	//no deberia ser hz2erbs
 	v_erbs2hz(f);
 	if(DEBUG == 1)printf("\n		Creating ERBFilters...\n");
 	ERBFilters(fs, f, fcoefs);

@@ -77,18 +77,20 @@ vector pitchStrengthOneCandidate( vector f, matrix NL, double pc ){
 		}
 	}
 	//Apply envelope, envelope is not necessary in prime multi F0
+	/*
 	double norm = 0;
 	for(i = 0; i < k.x; i++){
 		k.v[i] = k.v[i]*sqrt(1./f.v[i]);
 		if(k.v[i] > 0)
 			norm += k.v[i]*k.v[i];
 	}
-	norm = sqrt(norm);
+	norm = sqrt(norm);*/
 	//K+- normalize kernel
 	//Normalization is not necessary in Prime multi F0
+	/*
 	for(i = 0; i < k.x; i++){
 		k.v[i] = k.v[i]/norm;
-	}
+	}*/
 	//Compute pitch strength
 	for(i = 0; i < NL.x; i++){
 		for(j = 0; j < k.x; j++){
@@ -383,7 +385,7 @@ matrix receiveDataBuildS(matrix S, vector t, double fs, matrix ranges){
 }
 
 /*
- * Gets the Loudness Matrix associated to a window size
+ * Gets the Loudness Matrix associated to a window size, using the ERB scale
  * @param i, current number of window size, in the window sizes array
  * @param ws, window sizes array
  * @param n,
@@ -401,7 +403,7 @@ matrix getWsLoudnessMat(int i, vector ws, vector n, matrix Xz, vector w, vector 
 	int segm, col;
 	int copia;
 	double* window = 0;
-
+	//Loudness matrix, in erb frequency scale
 	matrix L = zerom(n.x, fERBs.x);
 
 	fftw_complex* fo = 0;
@@ -683,6 +685,8 @@ void getWsScoreMat(int i, vector ws, vector pc, matrix X, vector fERBs, vector d
 
 /*
 *Primary utility function for each pitch extraction
+*Prime multi F0 has a different kernel, not normalized and without the envelope, and also does not use the ERB scale.
+*Finally it applies a substraction of the prime multiples of each frecuency and eliminates the negative scores from the S matrix
 *@param wav, name of the input signal
 *@param paralelism, Paralelism level
 *@param min, Start of frequency range
