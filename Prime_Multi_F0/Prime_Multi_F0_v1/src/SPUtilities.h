@@ -25,6 +25,14 @@ double round2(double x);
 *@param y, interpolated function
 */
 void interp1(vector f, vector g, vector x, double* y);
+
+/*
+ * @param xO, original x axis values
+ * @param xN, new x axis values
+ * @param yO, original y axis values, a  y sample per column
+ * @return matrix, yN with the interpolated results
+ * */
+matrix interp1Mat(vector xO, vector xN, matrix yO);
 /*
 *Calculates the logarithm in base 2
 *@param x, number to calculate
@@ -161,6 +169,16 @@ void MaxRCerosVector(double* x, int size_x);
 *@param l, the maximum element to take into account in the search
 */
 void Max(double** x, int size_x, int size_c, double lim);
+/*
+ * checks all the values in the matrix mat, and if the current entry is minor than  value, copies a 0 to the new matrix,
+ * otherwise it leaves the same value
+ * @param value, value to check
+ * @param mat, matrix to compare
+ * @return matrix
+ * */
+matrix max(double value, matrix mat);
+void minus_local(matrix op1, matrix op2);
+
 /*
  *Returns a Hanning window in y
  *@param y, array to store the hanning window

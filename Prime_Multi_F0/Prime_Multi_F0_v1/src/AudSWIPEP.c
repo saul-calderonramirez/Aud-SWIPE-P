@@ -404,6 +404,7 @@ matrix getWsLoudnessMat(int i, vector ws, vector n, matrix Xz, vector w, vector 
 	int copia;
 	double* window = 0;
 	//Loudness matrix, in erb frequency scale
+	//needs to be changed for Prime multiF0
 	matrix L = zerom(n.x, fERBs.x);
 
 	fftw_complex* fo = 0;
@@ -843,8 +844,8 @@ vector aud_swipe_p(char wav[], double min, double max, double st, double dt, cha
  * Receives the score matrix S and applies post processing required by prime multi F0 algorithm
  * @param S, score matrix, rows are pitch candidates, columns are the values in time
  */
-void processMatrixSprimeMultiF0(matrix S, vector pc){
-	/*
+matrix processMatrixSprimeMultiF0(matrix S, vector pc){
+	/*Matlab code
 	 * S = max ( 0 , S ) ;
 		for i = primes ( pc ( end ) / pc ( 1 ) ) ;
 		S = S - max ( 0 , interp1 ( pc , S , i * pc , ’ linear’ ,0));
@@ -852,18 +853,26 @@ void processMatrixSprimeMultiF0(matrix S, vector pc){
 		S = max ( 0 , S ) ;
 	 *
 	 * */
-	int x, y;
-	//Eliminates negatives
-	for(x = 0; x < S.x; ++x ){
-		for(y = 0; y < S.y; ++y){
-			if(S.m[x][y] < 0){
-				S.m[x][y] = 0;
-			}
-
+	max(0, S);
+	vector pcPrimes = zerov(pc.x);
+	int numPrimes = (int)(pc.v[pc.x - 1] / pc.v[0]);
+	intvector numsPrimesReason = primes(numPrimes);
+	int i, j;
+	for(i = 0; i < numsPrimesReason.x; ++i){
+		printf("i: %d\n", numsPrimesReason.v[i]);
+		int primeNum = numsPrimesReason.v[i];
+		for(j = 0; j < pcPrimes.x; ++j){
+			pcPrimes.v[j] = pc.v[j] * primeNum;
 		}
+		printf("Curr Vector primes:\n");
+		printv(pcPrimes);
+		matrix Sinterp = interp1Mat(pc, pcPrimes, S);
+		minus_local(S, Sinterp);
+
+	}
 	//substract prime factors of each pitch candidate
 	//intvector primos = primes(n);//This is A-SWIPE'
-	}
+
 
 }
 

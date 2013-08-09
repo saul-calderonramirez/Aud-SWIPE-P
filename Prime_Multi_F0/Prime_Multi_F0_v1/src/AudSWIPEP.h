@@ -102,4 +102,4 @@ matrix pitchStrengthAllCandidates(vector f, matrix L, vector pc, vector j);
  * Receives the score matrix S and applies post processing required by prime multi F0 algorithm
  * @param S, score matrix, rows are pitch candidates, columns are the values in time
  */
-void processMatrixSprimeMultiF0(matrix S, vector pc);
+matrix processMatrixSprimeMultiF0(matrix S, vector pc);

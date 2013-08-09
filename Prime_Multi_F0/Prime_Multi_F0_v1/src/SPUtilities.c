@@ -34,10 +34,10 @@ double round2(double x) { // Rounds a double to the nearest integer value
 
 /*
 *Returns the interpolated function
-*@param f, the function to interpolate
-*@param g
-*@param x, x values corresponding to the function f
-*@param y, interpolated function
+*@param f, original x axis  values
+*@param g, original y axis values
+*@param x, x new values
+*@param y, y new values
 */
 void interp1(vector f, vector g, vector x, double* y){
 	int i = 0;
@@ -80,6 +80,40 @@ void interp1(vector f, vector g, vector x, double* y){
 		y[a] = 0;
 		a++;
 	}
+}
+
+/**/
+matrix interp1Mat(vector xO, vector xN, matrix S){
+	//each column is a sample function
+	int y, x;
+	printf("\nParams interp1Mat\n");
+	printf("xO:\n");
+	printv(xO);
+	printf("xN:\n");
+	printv(xN);
+	printf("S:\n");
+	printMatrix(S);
+	vector yO = zerov(S.x);
+	//pitch candidates at the rows, time on columns
+	matrix Sn = zerom(xN.x, S.y);
+	for(y = 0; y < S.y; ++y){
+		//interpolation of a column
+		for(x = 0; x < S.x; ++x){
+			yO.v[x] = S.m[x][y];
+		}
+		vector yN = zerov(xN.x);
+		interp1(xO, yO, xN, yN.v);
+		//interp(xO, yO, xN, )
+		for(x = 0; x < Sn.x; ++x){
+			Sn.m[x][y] = yN.v[x];
+		}
+		printf("Yn array: \n");
+		printv(yN);
+	}
+	freev(yO);
+	/*printf("Sinterp:\n");
+	printMatrix(Sn);*/
+	return Sn;
 }
 
 /*
@@ -254,10 +288,10 @@ void normalize(vector f){
 
 /*
 *Uses lineal interpolation to interpolate the function given in f
-*@param f, function to interpolate
-*@param g,
-*@param x,
-*@param end,
+*@param f, new x' axis, to interpolate
+*@param g, g, old y axis
+*@param x, old x axis
+*@param end, not used
 *@return double, the interpolated function
 */
 double interp(double* f, double* g, double x, int end){
@@ -518,6 +552,48 @@ void Max(double** x, int size_c, int size_x, double lim){
 		for(c = 0; c < size_x; c++){
 			if(x[f][c] < 0)
 				x[f][c] = 0;
+		}
+	}
+}
+
+/*
+ * checks all the values in the matrix mat, and if the current entry is minor than  value, copies a 0 to the new matrix,
+ * otherwise it leaves the same value
+ * @param value, value to check
+ * @param mat, matrix to compare
+ * @return matrix
+ * */
+matrix max(double value, matrix mat){
+	int i, j;
+	matrix result;
+	result = zerom(mat.x, mat.y);
+	for(i = 0; i < mat.x; ++i){
+		for(j = 0; j < mat.y; ++j){
+			result.m[i][j] = 0;
+			if(value <= mat.m[i][j])
+				result.m[i][j] = mat.m[i][j];
+		}
+	}
+	return result;
+}
+
+void max_local(double value, matrix mat){
+	int i, j;
+	for(i = 0; i < mat.x; ++i){
+		for(j = 0; j < mat.y; ++j){
+			if(value > mat.m[i][j]){
+				mat.m[i][j] = 0;
+			}
+		}
+	}
+
+}
+
+void minus_local(matrix op1, matrix op2){
+	int i, j;
+	for(i = 0; i < op1.x; ++i){
+		for(j = 0; j < op1.y; ++j){
+			op1.m[i][j] = op1.m[i][j] - op2.m[i][j];
 		}
 	}
 }
