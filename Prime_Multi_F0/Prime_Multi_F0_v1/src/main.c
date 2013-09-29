@@ -1,4 +1,4 @@
-#include "AudSWIPEP.h"
+#include "PrimeMultiF0.h"
 /*
 *Main method, interfacing with user arguments
 *@param argc, number of arguments
@@ -7,7 +7,9 @@
 */
 
 
-
+/*
+ * Test 1
+ * */
 void provaCalcS(){
 	printf("halloo, probando probando!!\n");
 
@@ -15,8 +17,8 @@ void provaCalcS(){
 	vector pcPrimes = zerov(2);
 	matrix S = zerom(2, 3);
 	pc.v[0] = 50; pc.v[1] = 200;
+	//Test in matlab
 	//S = [ 0 0.0003495 0.002; 0.0018 0.0338 0.0207];
-
 	S.m[0][0] = 0; S.m[0][1] = 0.0003495; S.m[0][2] = 0.002;
 	S.m[1][0] = 0.0018; S.m[1][1] = 0.0338; S.m[1][2] = 0.0207;
 	int numPrimes = (int)(pc.v[pc.x - 1] / pc.v[0]);
@@ -30,25 +32,43 @@ void provaCalcS(){
 		for(j = 0; j < pcPrimes.x; ++j){
 			pcPrimes.v[j] = pc.v[j] * primeNum;
 		}
-		printf("Curr Vector primes:\n");
+		printf("\nArray pcPrimes:\n");
 		printv(pcPrimes);
-		matrix Sn = interp1Mat(pc, pcPrimes, S);
+
+		matrix SnInterp = interp1Mat(pc, pcPrimes, S, 0);
+		printf("\nResult S\n");
+		printm(SnInterp);
 	}
 
 }
+/*
+ * Test 2
+ * Esta dando diferente el valor yN[0] = 0.012, cuando en matlab da yN[0] = 0.01
+.0 * */
+void interpVectorTest(){
+	vector xO = zerov(2);
+	xO.v[0] = 50; xO.v[1] = 200;
+	vector yO = zerov(2);
+	yO.v[0] = 0; yO.v[1] = 0.0018;
+	vector xN = zerov(2);
+	xN.v[0] = 150; xN.v[1] = 600;
+	vector yN = zerov(2);
+	interp1(xO, yO, xN, yN.v);
+	printf("yN:\n");
+	printv(yN);
+	double yNcurr = interp(xO.v, yO.v, 150, 0);
+	printf("Numero interpolado yNCurr: %f", yNcurr);
 
+}
+
+/*
+ * Main method
+ * @param argc, number of parameters
+ * @param argv, list of parameters
+ * */
 int main(int argc, char* argv[]) {
-		//executeAudSWIPEP(argc, argv);
-		vector xO = zerov(2);
-		xO.v[0] = 50; xO.v[1] = 200;
-		vector yO = zerov(2);
-		yO.v[0] = 0; yO.v[1] = 0.0018;
-		vector xN = zerov(2);
-		xN.v[0] = 100; xN.v[1] = 400;
-		vector yN = zerov(2);
-		interp1(xO, yO, xN, yN.v);
-		printf("yN:\n");
-		printv(yN);
+	//	executePrimeMultiF0(argc, argv);
+		interpVectorTest();
 		exit(EXIT_SUCCESS);
 
 }

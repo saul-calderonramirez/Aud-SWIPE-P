@@ -9,7 +9,7 @@
  * Archive Description: Main function Aud-SWIPE-P,
  */
 
-#include "AudSWIPEP.h"
+#include "PrimeMultiF0.h"
 #define MI 100
 #define MA 500
 #define ST .0001
@@ -695,7 +695,7 @@ void getWsScoreMat(int i, vector ws, vector pc, matrix X, vector fERBs, vector d
 *@param dt, time delta
 *@return vector, pitch array
 */
-vector aud_swipe_p(char wav[], double min, double max, double st, double dt, char* argv[], double paralelism, char* testName)  {
+vector primeMultiF0(char wav[], double min, double max, double st, double dt, char* argv[], double paralelism, char* testName)  {
 	int i, tamX, rango, maxvent, minvent;
 	double a, dlog2p, dlog2p_max, fs;
 	double dERBs = 0.1;
@@ -866,7 +866,7 @@ matrix processMatrixSprimeMultiF0(matrix S, vector pc){
 		}
 		printf("Curr Vector primes:\n");
 		printv(pcPrimes);
-		matrix Sinterp = interp1Mat(pc, pcPrimes, S);
+		matrix Sinterp = interp1Mat(pc, pcPrimes, S, 0);
 		minus_local(S, Sinterp);
 
 	}
@@ -951,11 +951,11 @@ void exitFailure(){
 
 
 /*
- * Executes the AudSWIPE Algorithm
+ * Executes the PrimeMultiF0 Algorithm
  *@param argc, number of arguments
  *@param argv, list of arguments
  * */
-void executeAudSWIPEP(int argc, char* argv[]){
+void executePrimeMultiF0(int argc, char* argv[]){
 		//MPI is initialized
 		initMPI( argc, argv );
 		myid = getProcessId();
@@ -1080,7 +1080,7 @@ void executeAudSWIPEP(int argc, char* argv[]){
 
 			while (fscanf(batch, "%s %s", wav, out) != EOF) {
 				fprintf(stderr, "%s -> %s ... ", wav, out);
-				vector p = aud_swipe_p(wav, min, max, st, dt, argv, paralelism, ptrTestFile);
+				vector p = primeMultiF0(wav, min, max, st, dt, argv, paralelism, ptrTestFile);
 				if (p.x == NOK) {
 					fprintf(stderr, "File or stream %s failed.\n", wav);
 					fclose(batch);
@@ -1095,7 +1095,7 @@ void executeAudSWIPEP(int argc, char* argv[]){
 			exit(EXIT_SUCCESS);
 		}
 		else {
-			vector p = aud_swipe_p(wav, min, max, st, dt, argv, paralelism, ptrTestFile);
+			vector p = primeMultiF0(wav, min, max, st, dt, argv, paralelism, ptrTestFile);
 			if (p.x == NOK) {
 				fprintf(stderr, "File or stream %s failed.\n", wav);
 				fclose(batch);

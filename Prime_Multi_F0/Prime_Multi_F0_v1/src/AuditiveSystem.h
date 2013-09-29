@@ -22,7 +22,7 @@ vector outmidear( int n, double fs);
 *Models the auditive system, archive's main function
 *@param x, input signal
 *@param samplerate, signal samplerate
-*@param time1,
+*@param time1, the clocks array, needed to measure executing time
 *@return matrix, A matrix with a signal per row, representing the cochlea's response to a different frequency band.
 */
 matrix audsys(vector x, double samplerate, clocksArray *time1);

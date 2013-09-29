@@ -30,9 +30,10 @@ void interp1(vector f, vector g, vector x, double* y);
  * @param xO, original x axis values
  * @param xN, new x axis values
  * @param yO, original y axis values, a  y sample per column
+ * @param extrapolate, states whether the algorithm must extrapolate or not
  * @return matrix, yN with the interpolated results
  * */
-matrix interp1Mat(vector xO, vector xN, matrix yO);
+matrix interp1Mat(vector xO, vector xN, matrix yO, int extrapolate);
 /*
 *Calculates the logarithm in base 2
 *@param x, number to calculate
@@ -177,6 +178,11 @@ void Max(double** x, int size_x, int size_c, double lim);
  * @return matrix
  * */
 matrix max(double value, matrix mat);
+/*
+ * Substracts two matrices
+ * @param op1, first operator
+ * @param op2, second operator
+ * */
 void minus_local(matrix op1, matrix op2);
 
 /*

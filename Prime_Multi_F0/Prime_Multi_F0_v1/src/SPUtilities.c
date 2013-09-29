@@ -82,20 +82,23 @@ void interp1(vector f, vector g, vector x, double* y){
 	}
 }
 
-/**/
-matrix interp1Mat(vector xO, vector xN, matrix S){
+/*
+ * Interpolates a matrix given
+ * */
+matrix interp1Mat(vector xO, vector xN, matrix S, int extrapolate){
 	//each column is a sample function
 	int y, x;
-	printf("\nParams interp1Mat\n");
+	/*printf("\nParams interp1Mat\n");
 	printf("xO:\n");
 	printv(xO);
 	printf("xN:\n");
 	printv(xN);
 	printf("S:\n");
-	printMatrix(S);
+	printMatrix(S);*/
 	vector yO = zerov(S.x);
-	//pitch candidates at the rows, time on columns
+	//pitch candidates at the rows, time on columns usually
 	matrix Sn = zerom(xN.x, S.y);
+	double maxXO = Max_v(xO);
 	for(y = 0; y < S.y; ++y){
 		//interpolation of a column
 		for(x = 0; x < S.x; ++x){
@@ -103,12 +106,14 @@ matrix interp1Mat(vector xO, vector xN, matrix S){
 		}
 		vector yN = zerov(xN.x);
 		interp1(xO, yO, xN, yN.v);
-		//interp(xO, yO, xN, )
+
 		for(x = 0; x < Sn.x; ++x){
 			Sn.m[x][y] = yN.v[x];
+			//if the user doesnot intend to extrapolate the array, and the interpolated value is outside the interval (extrapolate) put a 0
+			if(extrapolate == 0 && xN.v[x] > maxXO)
+				Sn.m[x][y] = 0;
 		}
-		printf("Yn array: \n");
-		printv(yN);
+
 	}
 	freev(yO);
 	/*printf("Sinterp:\n");

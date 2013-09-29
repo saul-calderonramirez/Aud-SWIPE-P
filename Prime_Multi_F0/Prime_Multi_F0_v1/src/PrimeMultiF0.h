@@ -18,14 +18,14 @@ int myid;
 double timeCochlea, timeSendData, timeMisc, timeWsCycles, timePitchRec, timeTotal;
 double timesAudsys[7];
 /*
- * Executes the AudSWIPE Algorithm
+ * Executes the PrimeMultiF0
  * @param argc, number of arguments
  * @param argv, list of arguments
  * */
-void executeAudSWIPEP(int argc, char* argv[]);
+void executePrimeMultiF0(int argc, char* argv[]);
 
 /*
-* Primary utility function for each pitch extraction
+* Primary utility function for multi pitch extraction
 * @param wav, name of the input signal
 * @param paralelism, Paralelism level
 * @param min, Start of frequency range
@@ -33,7 +33,7 @@ void executeAudSWIPEP(int argc, char* argv[]);
 * @param dt, time delta
 * @return vector, pitch array
 */
-vector aud_swipe_p(char wav[], double min, double max, double st, double dt, char* argv[], double paralelism, char* testName);
+vector primeMultiF0(char wav[], double min, double max, double st, double dt, char* argv[], double paralelism, char* testName);
 /*
  * Gets the pitch candidates associated to the current window size
  * @param i, current window size in the window size array

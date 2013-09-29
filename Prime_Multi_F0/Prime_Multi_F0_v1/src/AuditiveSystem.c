@@ -102,7 +102,7 @@ matrix Harmonics_into_channels(vector x, double fs, vector f){
 
 /*
 *Aligns the channels of the signal, necessary due to the different response times of each band of frequencies on the cochlea
-*@param X, the array
+*@param X, the matrix of channels to align
 *@param f, the frequency scale
 *@param fs, the sampling frequency
 *@return X, the matrix with the channels aligned
@@ -133,7 +133,6 @@ matrix alignChannels(matrix X, vector f, double fs){
 *@param fs, sample frequency
 *@param cf,
 *@param fcoefs, array that will contain ERBs coeficients
-*@param texto, the name of the array
 */
 void ERBFilters(double fs, vector cf, matrix fcoefs){
 	double T = 1/fs;
@@ -222,7 +221,7 @@ void ERBFilterBank(vector x, matrix fcoefs, matrix X){
 }
 
 /*
-*Models the auditive system response in different channel
+*Models the auditive system response on different channels
 *@param x, input signal
 *@param samplerate, signal samplerate
 *@param clocks, the clocks array to measure execution time
@@ -232,7 +231,7 @@ matrix audsys(vector x, double samplerate, clocksArray *clocks){
 	double fs = samplerate;
 	vector b, y, f;
 	matrix X, Y2;
-	//Flatten the spectral envelope
+	//Flattens the spectral envelope
 	if(DEBUG == 1)printf("\n	Creating outmidear filter...\n");
 	b = outmidear(round2(fs/100), fs);
 	endLocalClock(clocks, 1, "Creating outmidear filter");
