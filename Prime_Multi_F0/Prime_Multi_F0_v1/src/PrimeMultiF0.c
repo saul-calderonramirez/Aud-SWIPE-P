@@ -584,6 +584,7 @@ void getWsScoreMat(int i, vector ws, vector pc, matrix X, vector fERBs, vector d
 	}
 	//Specific-loudness matrix
 	if(DEBUG==1)printf("\n	Creating specific-loudness matrix...\n");
+	//This changes in Prime Multi F0, the scale is linear
 	L = zerom(n.x, fERBs.x);
 	double df = fs / ws.v[i];
 	fi = zerov(ws.v[i]);
@@ -626,9 +627,11 @@ void getWsScoreMat(int i, vector ws, vector pc, matrix X, vector fERBs, vector d
 	}
 	endLocalClock(&cycleClocks, 0, "ComputeRaised-cosineWeights");
 	//Calculates the Loudness Matrix
+	//This changes in Prime Multi F0, the scale is linear
 	L = getWsLoudnessMat( i,  ws,  n,  Xz, w, fERBs, fi, W, X.x);
 	//Compute pitch strength
 	if(DEBUG==1)printf("\n	Compute pitch strength...\n");
+	//This changes in Prime Multi F0, the scale is linear
 	Si = pitchStrengthAllCandidates(fERBs, L, pc, j);
 	endLocalClock(&cycleClocks, 0, "ComputePitchStrength");
 	//end clock 10
@@ -801,10 +804,13 @@ vector primeMultiF0(char wav[], double min, double max, double st, double dt, ch
 	if( isParent() ){
 		//receives the data
 		resultS = receiveDataBuildS( S, t, fs, ranges);
+		//must do
+		//processMatrixSprimeMultiF0(matrix S, vector pc)
 		endLocalClock(&clocks, 0, "ReceiveMatrixS");
 		//clock 13
 		if(DEBUG == 1){printf("\nCompute pitch...\n");}
 		//Must receive all the parts of S from the children to build p
+		//This changes in Prime Multi F0, the pitch is not calculated, the matrix S is returned
 		if(getNumberProcesses() > 1){
 			//algorithm was executed by several processes, we need to use resultS
 			p = pitch(resultS, pc, st);
