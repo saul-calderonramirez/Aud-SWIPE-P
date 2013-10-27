@@ -1,0 +1,29 @@
+16:44:00 **** Build of configuration Debug for project PrimeMultiF0 ****
+make all 
+Building file: ../.metadata/.plugins/org.eclipse.cdt.make.core/specs.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF".metadata/.plugins/org.eclipse.cdt.make.core/specs.d" -MT".metadata/.plugins/org.eclipse.cdt.make.core/specs.d" -o ".metadata/.plugins/org.eclipse.cdt.make.core/specs.o" "../.metadata/.plugins/org.eclipse.cdt.make.core/specs.c"
+../AuditiveSystem.c: In function ‘ERBFilterBank’:
+Finished building: ../.metadata/.plugins/org.eclipse.cdt.make.core/specs.c
+../AuditiveSystem.c:199:0: warning: ignoring #pragma omp parallel [-Wunknown-pragmas]
+ 
+Building file: ../AuditiveSystem.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"AuditiveSystem.d" -MT"AuditiveSystem.d" -o "AuditiveSystem.o" "../AuditiveSystem.c"
+Finished building: ../AuditiveSystem.c
+ 
+Building file: ../Clocks.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"Clocks.d" -MT"Clocks.d" -o "Clocks.o" "../Clocks.c"
+Finished building: ../Clocks.c
+ 
+Building file: ../MPIMatlabCommunicator.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"MPIMatlabCommunicator.d" -MT"MPIMatlabCommunicator.d" -o "MPIMatlabCommunicator.o" "../MPIMatlabCommunicator.c"
+In file included from ../MPIMatlabCommunicator.c:10:0:
+../MPIMatlabCommunicator.h:12:17: fatal error: mpi.h: No such file or directory
+compilation terminated.
+make: *** [MPIMatlabCommunicator.o] Error 1
+
+16:44:00 Build Finished (took 360ms)
+
