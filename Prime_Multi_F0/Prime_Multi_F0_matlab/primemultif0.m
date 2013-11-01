@@ -30,6 +30,7 @@ for i=1:length(ws)
     xzp = [zeros(ws(i)/2,1);x(:);zeros(dn+ws(i)/2,1)];
     % Compute spectrum:
     w = hanning(ws(i)); % Hann window 
+    %o = woverlap
     o = max(0,round(ws(i) - dn)); % window overlap
     [X,f,ti] = specgram(xzp,ws(i),fs,w,o);
     % Select candidates that use this window size:
@@ -45,6 +46,7 @@ for i=1:length(ws)
     % Compute loudness at required frequency range:
     first = find(f>pc(j(1))/4,1,'first');
     f = f(first:end);
+    %root of the spectogram
     L = sqrt(abs(X(first:end,:)));
     % Compute scores:
     Si = scoresAllCandidates(f,L,pc(j));

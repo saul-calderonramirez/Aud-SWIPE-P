@@ -388,8 +388,8 @@ matrix receiveDataBuildS(matrix S, vector t, double fs, matrix ranges){
  * Gets the Loudness Matrix associated to a window size, using the ERB scale
  * @param i, current number of window size, in the window sizes array
  * @param ws, window sizes array
- * @param n, IS THE ARRAY OF WINDOWS TO PROCESS
- * @param Xz, THE ZERO PADDED SIGNAL
+ * @param n,
+ * @param Xz,
  * @param w,
  * @param fERBs, ERB frequency array
  * @param fi,

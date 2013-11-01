@@ -388,8 +388,8 @@ matrix receiveDataBuildS(matrix S, vector t, double fs, matrix ranges){
  * Gets the Loudness Matrix associated to a window size, using the ERB scale
  * @param i, current number of window size, in the window sizes array
  * @param ws, window sizes array
- * @param n, IS THE ARRAY OF WINDOWS TO PROCESS
- * @param Xz, THE ZERO PADDED SIGNAL
+ * @param n,
+ * @param Xz,
  * @param w,
  * @param fERBs, ERB frequency array
  * @param fi,
@@ -708,7 +708,7 @@ void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d,
 	getPitchCandidatesOfWs(i, ws, d, &j, &k);//j PASO prueba 1
 
 
-
+	//Gets the pitch candidates associated to the current window size
 	// Zero pad signal is now a vector
 	xz = zerov(x.x + round(ws.v[i] / 2) + round(dn + ws.v[i] / 2));
 	int fil, col, col2;
@@ -716,14 +716,13 @@ void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d,
 	//fill the values
 	for(col = (ws.v[i] / 2); col < x.x + (ws.v[i] / 2); col++, col2++){
 		xz.v[col] = x.v[col2];
-	}//xz PASO prueba 1
+	}
 
 	//Testing
-	printf("Valores depuracion: dn: %f, woverlap: %f\n", dn, woverlap);
+	printf("Valores depuracion: dn: %f, woverlap: %f", dn, woverlap);
 	outBinaryV(j.v, j.x, "j.xlx");
 	outBinaryV(w.v, w.x, "w.xlx");
 	outBinaryV(xz.v, xz.x, "xz.xlx");
-	//Gets the pitch candidates associated to the current window size
 
 }
 

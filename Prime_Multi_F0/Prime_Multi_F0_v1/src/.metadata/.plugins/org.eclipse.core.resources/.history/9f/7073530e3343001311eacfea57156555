@@ -388,8 +388,8 @@ matrix receiveDataBuildS(matrix S, vector t, double fs, matrix ranges){
  * Gets the Loudness Matrix associated to a window size, using the ERB scale
  * @param i, current number of window size, in the window sizes array
  * @param ws, window sizes array
- * @param n, IS THE ARRAY OF WINDOWS TO PROCESS
- * @param Xz, THE ZERO PADDED SIGNAL
+ * @param n,
+ * @param Xz,
  * @param w,
  * @param fERBs, ERB frequency array
  * @param fi,
@@ -686,11 +686,11 @@ void getWsScoreMat(int i, vector ws, vector pc, matrix X, vector fERBs, vector d
 
 }
 
-void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d, matrix S, double fs, vector p0, vector t){
+void getWsScoreMat_PrimeMultiF0(int i, vector ws, vector pc, vector d, matrix S, double fs, vector p0, vector t){
 	//woverlap es DIFERENTE
 	double dn, woverlap = 0.5;
-	matrix L, W, Si, Si2;
-	vector w, n, fi, l, g, mu, xz;
+	matrix L, Xz, W, Si, Si2;
+	vector w, n, fi, l, g, mu;
 	vector j = zerov(pc.x);
 	vector k = zerov(pc.x);
 
@@ -703,27 +703,16 @@ void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d,
 	//calculates the window overlap
 	//DIFERENTE
 	woverlap = maxim(0, round(ws.v[i] - dn));//PASO prueba1
-
+	// Zero pad signal
 	if(DEBUG==1)printf("\n	Zero pad signal...\n");
 	getPitchCandidatesOfWs(i, ws, d, &j, &k);//j PASO prueba 1
 
-
-
-	// Zero pad signal is now a vector
-	xz = zerov(x.x + round(ws.v[i] / 2) + round(dn + ws.v[i] / 2));
-	int fil, col, col2;
-	col2 = 0;
-	//fill the values
-	for(col = (ws.v[i] / 2); col < x.x + (ws.v[i] / 2); col++, col2++){
-		xz.v[col] = x.v[col2];
-	}//xz PASO prueba 1
-
 	//Testing
-	printf("Valores depuracion: dn: %f, woverlap: %f\n", dn, woverlap);
+	printf("Valores depuracion: dn: %f, woverlap: %f", dn, woverlap);
 	outBinaryV(j.v, j.x, "j.xlx");
 	outBinaryV(w.v, w.x, "w.xlx");
-	outBinaryV(xz.v, xz.x, "xz.xlx");
 	//Gets the pitch candidates associated to the current window size
+
 
 }
 
@@ -788,7 +777,7 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
 
 	//Calculates a score for every window size
 	for(i = 0; i < ws.x; ++i){
-		getWsScoreMat_PrimeMultiF0(i, x, ws, pc, d, S, fs, p0, t);
+		getWsScoreMat_PrimeMultiF0(i, ws, pc, d, S, fs, p0, t);
 	}
 
 
