@@ -72,7 +72,7 @@ typedef struct{
 	int** m;
 } intmatrix;
 
-
+void outBinaryM(double** m, int x, int y, char file[]);
 vector makev(int);
 vector zerov(int);
 vector onesv(int);

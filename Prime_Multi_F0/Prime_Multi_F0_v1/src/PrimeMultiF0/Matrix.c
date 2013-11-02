@@ -68,6 +68,23 @@ void outBinaryV(double* v, int x, char file[]){
 
 	fclose(out);
 }
+
+/*
+*Writes the given matrix into a file
+*@param m, the matrix to write
+*@param x, number of rows
+*@param file, file name
+*/
+void outBinaryM(double** m, int x, int y, char file[]){
+	FILE * out;
+	out = fopen (file, "wb");
+	int i;
+	for(i = 0; i < x; ++i){
+		fwrite(m[i], sizeof(double), y, out);
+	}
+	fclose(out);
+}
+
 // create a vector of size xSz
 vector makev(int xSz) {
     vector nw_vector;

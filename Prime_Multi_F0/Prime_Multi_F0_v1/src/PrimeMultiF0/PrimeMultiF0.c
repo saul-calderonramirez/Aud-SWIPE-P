@@ -686,6 +686,95 @@ void getWsScoreMat(int i, vector ws, vector pc, matrix X, vector fERBs, vector d
 
 }
 
+/*
+ * Calculates the spectogram of the zero padded signal in parallel, with one thread per window
+ * @param zpSignal, zeropadded signal
+ * @param ws, window size
+ * @param w, window, could be a hanning window
+ * @param woverlap, window overlap
+ * Must return in some way n and fi
+ * */
+matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, double dn){
+		int p, ind, col, copia, a;
+		vector fi, n, ti;
+		matrix L, nL;
+		//delta in the frequency domain
+		double df = fs / ws;
+		//frequencies to be computed in the FFT
+		//it goes all the way to the sampling frequency, i.e 10 KHZ
+		fi = zerov(ws);
+		for(ind = 0; ind < fi.x; ind++){
+			fi.v[ind] = (double)ind * df;
+		}
+		double* window = 0;
+
+		//Debugging
+		outBinaryV(fi.v, fi.x, "f.xlx");
+		//Centers of the windows
+		n = zerov(ceil((zpSignal.x - ws + 1.) * (1. / dn)));//Centers of the windows
+		for(ind = 0, a = 0; ind < n.x; a = a + dn, ind++){
+			n.v[ind] = a;
+		}
+		//Loudness matrix
+		L = zerom(ws, n.x);
+		//matrix with half the maximum frequency
+		nL = zerom(round(0.5 * ws) + 1, n.x);
+		//Complex number array
+		fftw_complex* fo = 0;
+		if(DEBUG==1)printf("\nCalculating the specgram in parallel...\n");
+		 /* Thread parallelization 1, each thread calculates the Enhanced spectrum or ESRAS for a window
+		 * */
+		fftw_plan plan = fftw_plan_dft_r2c_1d(ws, window, fo, FFTW_ESTIMATE);
+		#pragma omp parallel for private(ind, col, window, copia, fo)
+		for(p = 0; p < n.x; p++){
+			vector sl = zerov(ws);//Specific loudness
+			//Compute specific loudness
+			//current window to compute
+			window = fftw_malloc(sizeof(double) * ws);
+			fo = fftw_malloc(sizeof(fftw_complex) * ws);
+			ind = 0;
+			//applies the window to the signal, i.e Hann window
+			for(col = n.v[p]; col < n.v[p] + ws; col++, ind++){
+				window[ind] = (w.v[ind] * zpSignal.v[col]);
+			}
+			//Calculates the fft of the window calculated previously
+			////Magnitudes
+			fftw_execute_dft_r2c(plan, window, fo);
+			copia = ws - 1;
+			for(ind = 1; ind < ws / 2; ind++, copia--){//fft Calculates only the first n/2 + 1, because of nyquist
+				fo[copia][0] = fo[ind][0];
+				fo[copia][1] = fo[ind][1];
+			}
+			//Specific Loudness computation
+			//i.e complex to real number conversion
+			for(ind = 0; ind < ws; ind++){
+				//The first root is because of the modulus, the other one because of the loudness operator
+				L.m[ind][p] = sqrt(sqrt((fo[ind][0]*fo[ind][0]) + (fo[ind][1]*fo[ind][1])));
+				fo[ind][0] = 0;
+				fo[ind][1] = 0;
+			}
+			fftw_free(window);
+			fftw_free(fo);
+		}
+		fftw_destroy_plan(plan);
+		//n must be converted to time scale, using the sampling frequency fs
+		ti = zerov(n.x);
+		for(ind = 0; ind < n.x; ++ind){
+			ti.v[ind] = n.v[ind] / fs;
+		}
+		//Copies only values of interest
+		for(p = 0; p < n.x; ++p){
+			for(ind = 0; ind < nL.x; ind++){
+				nL.m[ind][p] = L.m[ind][p];
+			}
+		}
+		//Debugging
+		outBinaryV(ti.v, ti.x, "ti.xlx");
+		outBinaryM(nL.m, nL.x, nL.y, "L.xlx");
+		//f and L frequency range must be from zero to fs/2, with size ws/2 +1
+		return nL;
+}
+
 void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d, matrix S, double fs, vector p0, vector t){
 	//woverlap es DIFERENTE
 	double dn, woverlap = 0.5;
@@ -696,6 +785,7 @@ void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d,
 
 	//dn es DIFERENTE
 	//Hop size
+	//p0, window sizes used by the pitch candidate
 	dn = maxim(1, round(4  * fs / p0.v[i] ));//PASO prueba1
 	//calculates hanning window
 	w = zerov(ws.v[i]);// PASO prueba 1
@@ -717,6 +807,8 @@ void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d,
 	for(col = (ws.v[i] / 2); col < x.x + (ws.v[i] / 2); col++, col2++){
 		xz.v[col] = x.v[col2];
 	}//xz PASO prueba 1
+
+	L = specgram(xz, ws.v[i], fs, w, woverlap, dn);
 
 	//Testing
 	printf("Valores depuracion: dn: %f, woverlap: %f\n", dn, woverlap);

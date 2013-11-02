@@ -23,6 +23,14 @@ double timesAudsys[7];
  * @param argv, list of arguments
  * */
 void executePrimeMultiF0(int argc, char* argv[]);
+/*
+ * Calculates the spectogram of the zero padded signal in parallel, with one thread per window
+ * @param zpSignal, zeropadded signal
+ * @param ws, window size
+ * @param w, window, could be a hanning window
+ * @param woverlap, window overlap
+ * */
+matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, double dn);
 
 /*
 * Primary utility function for multi pitch extraction

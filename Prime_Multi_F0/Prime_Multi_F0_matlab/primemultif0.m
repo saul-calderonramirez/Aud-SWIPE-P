@@ -32,6 +32,8 @@ for i=1:length(ws)
     w = hanning(ws(i)); % Hann window 
     %o = woverlap
     o = max(0,round(ws(i) - dn)); % window overlap
+    %One fourier transform per column
+    %f, frequencies at which the fft was calculated
     [X,f,ti] = specgram(xzp,ws(i),fs,w,o);
     % Select candidates that use this window size:
     if length(ws) == 1
