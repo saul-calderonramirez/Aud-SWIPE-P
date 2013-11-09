@@ -694,9 +694,9 @@ void getWsScoreMat(int i, vector ws, vector pc, matrix X, vector fERBs, vector d
  * @param woverlap, window overlap
  * Must return in some way n and fi
  * */
-matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, double dn){
+matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, double dn, vector f){
 		int p, ind, col, copia, a;
-		vector fi, n, ti;
+		vector  fi, n, ti;
 		matrix L, nL;
 		//delta in the frequency domain
 		double df = fs / ws;
@@ -706,10 +706,12 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 		for(ind = 0; ind < fi.x; ind++){
 			fi.v[ind] = (double)ind * df;
 		}
+		for(ind = 0; ind < f.x; ind++){
+			f.v[ind] = fi.v[ind];
+		}
 		double* window = 0;
 
-		//Debugging
-		outBinaryV(fi.v, fi.x, "f.xlx");
+
 		//Centers of the windows
 		n = zerov(ceil((zpSignal.x - ws + 1.) * (1. / dn)));//Centers of the windows
 		for(ind = 0, a = 0; ind < n.x; a = a + dn, ind++){
@@ -775,11 +777,195 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 		return nL;
 }
 
+/*
+*Returns the pitch strength of one pitch candidate, applying the kernel to the matrix of signals
+*This is the kernel of Aud SWIPE'
+*@param f, the erb scale
+*@param NL, the normalized loudness matrix of signals
+*@param pc, the pitch candidate
+*@return vector, computed pitch strenghts
+*/
+vector scoreOneCandidate( vector f, matrix NL, double pc ){
+	int n,i,j;
+	vector S = zerov(NL.x);
+	double p = f.v[f.x-1]/pc -0.75;//Number of harmonics
+	vector q = copyv(f);
+	if(p >= 0){
+		n = floor(p);
+	}else{
+		n = ceil(p);
+	}
+	if(n == 0){
+		return S;
+	}
+	vector k = zerov(f.x);//Kernel
+	for(i = 0; i < q.x; i++){
+		q.v[i] = q.v[i]/pc;//Normalize frequency w.r.t. candidate
+	}
+	intvector primos = primes(n);//This is A-SWIPE'
+	vector prim = zerov(primos.x+1);
+	for(i = primos.x-1;i >= 0; i--){
+		prim.v[i+1] = primos.v[i];
+	}
+	prim.v[i+1] = 1;
+	double val;
+	for(i = 0; i < prim.x; i++){///PARALELIZAR AQUI **
+		for(j = 0; j < q.x; j++){
+			val = fabs(q.v[j]-prim.v[i]);
+			if(val < 0.25){//Peaks weights
+				k.v[j] = cos(2*M_PI*q.v[j]);
+			}else{
+				if(val > 0.25 && val < 0.75){//Valleys weights
+					k.v[j] = k.v[j] + cos(2*M_PI*q.v[j]) / 2;
+				}
+			}
+		}
+	}
+	//Applies the envelope, envelope is not necessary in prime multi F0
+
+	double norm = 0;
+	for(i = 0; i < k.x; i++){
+		//k.v[i] = k.v[i]*sqrt(1./f.v[i]);
+		if(k.v[i] > 0)
+			norm += k.v[i]*k.v[i];
+	}
+	norm = sqrt(norm);
+
+	//K+- normalize kernel
+	//Normalization SEEMED not necessary in Prime multi F0
+
+	for(i = 0; i < k.x; i++){
+		k.v[i] = k.v[i]/norm;
+	}
+	//Compute pitch strength
+	for(i = 0; i < NL.x; i++){
+		for(j = 0; j < k.x; j++){
+		S.v[i] += NL.m[i][j] * k.v[j];
+		}
+	}
+	freeiv(primos);
+	freev(k);
+	freev(prim);
+	freev(q);
+	return S;
+}
+
+matrix trasposeMat(matrix X){
+	matrix N = zerom(X.y, X.x);
+	int col, fil;
+	for(fil = 0; fil < N.x; ++fil){
+		for(col = 0; fil < N.y; ++col){
+			N.m[fil][col] = X.m[col][fil];
+		}
+	}
+	return N;
+}
+
+/*
+*Returns the pitch strength of several pitch candidate, applying the kernel to the matrix of signals
+*@param f, the erb scale
+*@param L, the loudness matrix of signals
+*@param pc, the pitch candidate
+*@param j, pitch candidates of the current window size
+*@return matrix, computed pitch strenghts per pitch candidate
+*/
+matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
+	//Create pitch salience matrix
+	if(DEBUG == 1)printf("\n		Create pitch salience matrix...\n");
+	matrix S = zerom(j.x, L.x);
+	vector k = zerov(j.x);
+	int q, a, find, i, c;
+	int ant = 0;
+	//selects the pitch candidates corresponding to the current window size
+	//pc2 new array with the corresponding pitch candidates to the window size
+	vector pc2 = zerov(j.x);
+	printf("Primer parte score all candidates...\n");
+	for(q = 0; q < j.x; q++){
+		//CAMBIO!!! antes jalaba basura porque j inicia desde 1
+		pc2.v[q] = pc.v[(int)j.v[q] - 1];
+	}
+	for(q = 0; q < k.x; q++){//Find
+		for(a = ant; f.x; a++){
+			if(f.v[a] > pc2.v[q]/4.){
+				find = a;
+				break;
+			}
+		}
+		k.v[q] = find;
+		ant = k.v[q];
+	}
+	//Loudness normalization factor
+	if(DEBUG == 1)printf("\n		Loudness normalization factor...\n");
+	//Hasta aqui va igual,se necesita transponer la matrix L
+	matrix N = zerom(L.x, L.y);
+	int fil,col;
+	double suma = 0;
+	for(fil = 0; fil<N.x; fil++, suma = 0){
+		for(col = N.y-1; col >=0 ; col--){
+			suma += L.m[fil][col];
+			N.m[fil][col] = suma;
+		}
+	}
+	//DEBUG
+	outBinaryV(k.v, k.x, "k.xlx");
+	outBinaryV(pc2.v, pc2.x, "pc2.xlx");
+	outBinaryV(j.v, j.x, "j2.xlx");
+	outBinaryV(L.m[0], L.x, "Lfil1.xlx");
+	outBinaryM(N.m, N.x, N.y, "N.xlx");
+	outBinaryM(L.m, L.x, L.y, "L.xlx");
+
+	printf("Segunda parte score all candidates...\n");
+	double val;
+	vector n;
+	matrix NL;
+	vector f2;
+	if(DEBUG == 1)printf("\n		Normalize Loudness...\n");
+	if(DEBUG == 1)printf("\n		Compute each candidate's pitch strength...\n");
+	// Thread parallelization 3, each thread calculates the score of a pitch candidate
+	#pragma omp parallel for private (NL, f2, n, val, i, a, c)
+	for(q = 0; q < pc2.x; q++){
+
+		NL = zerom(L.x, L.y-(int)k.v[q]);
+		f2 = zerov(L.y-(int)k.v[q]);
+		n = zerov(N.x);
+		//Normalize Loudness
+		for(i = 0; i < n.x; i++){
+			val = N.m[i][(int)k.v[q]];
+			if(val != 0){
+				n.v[i] = val;
+			}else{
+				n.v[i] = 88888;
+			}
+		}
+		for(i = 0; i < NL.x; i++){
+			for(a = 0,c = (int)k.v[q]; a < NL.y; a++, c++){
+				NL.m[i][a] = L.m[i][c] / n.v[i];
+				f2.v[a] = f.v[c];
+			}
+		}
+		//Compute pitch strength
+		printf("Antes de score one candidate pc2: %f\n", pc2.v[q]);
+		vector Si = scoreOneCandidate( f2, NL, pc2.v[q] );
+		for(i = 0; i < Si.x; i++){
+			S.m[q][i] = Si.v[i];
+		}
+		freev(Si);
+		freev(f2);
+		freev(n);
+		freem(NL);
+	}
+	printf("Tercer parte score all candidates...\n");
+	freev(k);
+	freev(pc2);
+	freem(N);
+	return S;
+}
+
 void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d, matrix S, double fs, vector p0, vector t){
 	//woverlap es DIFERENTE
-	double dn, woverlap = 0.5;
-	matrix L, W, Si, Si2;
-	vector w, n, fi, l, g, mu, xz;
+	double dn, minPc, woverlap = 0.5;
+	matrix L, L2, W, Si, Si2;
+	vector w, n, fi, l, g, mu, xz, f, f2;
 	vector j = zerov(pc.x);
 	vector k = zerov(pc.x);
 
@@ -807,8 +993,40 @@ void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d,
 	for(col = (ws.v[i] / 2); col < x.x + (ws.v[i] / 2); col++, col2++){
 		xz.v[col] = x.v[col2];
 	}//xz PASO prueba 1
+	//we create the frequencies array
+	f = zerov((ws.v[i]/2) + 1);
+	L = specgram(xz, ws.v[i], fs, w, woverlap, dn, f);
+	//Computes scores
+	//Debugging
 
-	L = specgram(xz, ws.v[i], fs, w, woverlap, dn);
+	//Compute loudness at required frequency range:
+	minPc = pc.v[0] / 4;
+	int pos = -1;
+	for(col = 0; col < f.x && pos == -1; ++col){
+		if(f.v[col] > minPc){
+			pos = col;
+		}
+	}
+	f2 = zerov(f.x - pos);
+	int indF2 = 0;
+	for(fil = pos; fil < f.x; ++fil){
+		f2.v[indF2++] = f.v[fil];
+	}
+	L2 = zerom(f2.x, L.y);
+	indF2 = pos;
+	for(fil = 0; fil < L2.x; ++fil){
+		for(col = 0; col < L2.y; ++col){
+			L2.m[fil][col] = L.m[indF2][col];
+		}
+		indF2++;
+	}
+
+	Si = scoresAllCandidates(f2, L2, pc, j);
+	//DEBUG
+	outBinaryV(f2.v, f2.x, "f.xlx");
+
+	outBinaryM(Si.m, Si.x, Si.y, "Si.xlx");
+	outBinaryM(L2.m, L2.x, L2.y, "L2.xlx");
 
 	//Testing
 	printf("Valores depuracion: dn: %f, woverlap: %f\n", dn, woverlap);
@@ -818,6 +1036,8 @@ void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d,
 	//Gets the pitch candidates associated to the current window size
 
 }
+
+
 
 /*
  * vector pc, must be a column vector
