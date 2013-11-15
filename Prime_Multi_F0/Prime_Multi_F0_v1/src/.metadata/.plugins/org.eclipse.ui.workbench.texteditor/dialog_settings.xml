@@ -13,16 +13,16 @@
 		<item value="true" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wholeword"/>
-		<item value="NL" key="selection"/>
+		<item value="scoresAllCandidates" key="selection"/>
 		<list key="findhistory">
+			<item value="scoresAllCandidates"/>
+			<item value="scoreOneCandidate"/>
+			<item value="specgram"/>
+			<item value="trasposeMat"/>
 			<item value="NL"/>
 			<item value="L = zerom"/>
-			<item value="specgram"/>
 			<item value="matrix L"/>
 			<item value="pitchStrengthAllCandidates"/>
-			<item value="pitchStrength"/>
-			<item value="scoreAllCandidates"/>
-			<item value="AllCandidates"/>
 		</list>
 		<list key="replacehistory">
 		</list>

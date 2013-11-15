@@ -112,7 +112,8 @@ if n==0, S=NaN; return, end
 k = zeros(size(f)); % kernel
 q = f/pc; % normalized frequency w.r.t. candidate
 % Create kernel:
-for i = [1 :primes(n)]
+primesN = primes(n);
+for i = [1 primes(n)]
     a = abs(q-i);
     % Peak's weigth:
     p = a<0.25; 
@@ -121,8 +122,11 @@ for i = [1 :primes(n)]
     v = 0.25<a & a<0.75;
     k(v) = k(v) + cos(2*pi*q(v))/2;
 end
-k = k / norm( k(k>0) ); 
+normK =  norm( k(k>0) );
+
+k = k / normK; 
 S = k'*NL;
+pss = 0;
 
 %  
 % function S = pitchStrengthOneCandidate( f, NL, pc )

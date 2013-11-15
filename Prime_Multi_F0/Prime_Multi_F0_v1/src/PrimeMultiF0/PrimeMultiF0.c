@@ -32,6 +32,18 @@
 #define MAX  600.
 #define VNUM                         1.5 // Current version
 
+matrix trasposeMat(matrix X){
+	matrix N = zerom(X.y, X.x);
+	int col, fil;
+	for(fil = 0; fil < N.x; ++fil){
+		for(col = 0; col < N.y; ++col){
+			N.m[fil][col] = X.m[col][fil];
+		}
+	}
+	return N;
+}
+
+
 /*
 *Returns the pitch strength of one pitch candidate, applying the kernel to the matrix of signals
 *This is the kernel of Aud SWIPE'
@@ -692,6 +704,7 @@ void getWsScoreMat(int i, vector ws, vector pc, matrix X, vector fERBs, vector d
  * @param ws, window size
  * @param w, window, could be a hanning window
  * @param woverlap, window overlap
+ * @param L, in each column a real part of the FFT, N columns as N FFTs, as N windows
  * Must return in some way n and fi
  * */
 matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, double dn, vector f){
@@ -718,14 +731,14 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 			n.v[ind] = a;
 		}
 		//Loudness matrix
+		//in each column a real part of the FFT, N columns as N FFTs, as N windows
 		L = zerom(ws, n.x);
 		//matrix with half the maximum frequency
 		nL = zerom(round(0.5 * ws) + 1, n.x);
 		//Complex number array
 		fftw_complex* fo = 0;
 		if(DEBUG==1)printf("\nCalculating the specgram in parallel...\n");
-		 /* Thread parallelization 1, each thread calculates the Enhanced spectrum or ESRAS for a window
-		 * */
+
 		fftw_plan plan = fftw_plan_dft_r2c_1d(ws, window, fo, FFTW_ESTIMATE);
 		#pragma omp parallel for private(ind, col, window, copia, fo)
 		for(p = 0; p < n.x; p++){
@@ -787,6 +800,20 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 */
 vector scoreOneCandidate( vector f, matrix NL, double pc ){
 	int n,i,j;
+	char nameF[50];
+	char nameNL[50];
+	char nameS[50];
+	char namePrims[50];
+	char nameK[50];
+	sprintf(nameF, "fSOC_%f.xlx", pc);
+	sprintf(nameNL, "NLSOC_%f.xlx", pc);
+	sprintf(nameS, "SSOC_%f.xlx", pc);
+	sprintf(namePrims, "PrimesSOC_%f.xlx", pc);
+	sprintf(nameK, "KSOC_%f.xlx", pc);
+	outBinaryV(f.v, f.x, nameF);
+	outBinaryM(NL.m, NL.x, NL.y, nameNL);
+
+
 	vector S = zerov(NL.x);
 	double p = f.v[f.x-1]/pc -0.75;//Number of harmonics
 	vector q = copyv(f);
@@ -808,41 +835,52 @@ vector scoreOneCandidate( vector f, matrix NL, double pc ){
 		prim.v[i+1] = primos.v[i];
 	}
 	prim.v[i+1] = 1;
+	//In the matlab cycle it begins from 1 passing through every prime number
 	double val;
 	for(i = 0; i < prim.x; i++){///PARALELIZAR AQUI **
 		for(j = 0; j < q.x; j++){
-			val = fabs(q.v[j]-prim.v[i]);
+			val = fabs(q.v[j] - prim.v[i]);
 			if(val < 0.25){//Peaks weights
 				k.v[j] = cos(2*M_PI*q.v[j]);
-			}else{
+			}else{//cambio antes, val > 0.25
 				if(val > 0.25 && val < 0.75){//Valleys weights
-					k.v[j] = k.v[j] + cos(2*M_PI*q.v[j]) / 2;
+					k.v[j] = k.v[j] + cos(2 * M_PI * q.v[j]) / 2;
 				}
 			}
 		}
 	}
-	//Applies the envelope, envelope is not necessary in prime multi F0
+	//Hasta aqui K va igual
+
+	//Debug
+	outBinaryV(k.v, k.x, nameK);
+	outBinaryV(prim.v, prim.x, namePrims);
+	//Envelope is not necessary in prime multi F0
 
 	double norm = 0;
 	for(i = 0; i < k.x; i++){
-		//k.v[i] = k.v[i]*sqrt(1./f.v[i]);
 		if(k.v[i] > 0)
 			norm += k.v[i]*k.v[i];
 	}
+	//the sqrt of the norm is not used in Prime multi F0
 	norm = sqrt(norm);
-
+	printf("PC: %f, normK: %f\n", pc, norm);
 	//K+- normalize kernel
 	//Normalization SEEMED not necessary in Prime multi F0
 
 	for(i = 0; i < k.x; i++){
 		k.v[i] = k.v[i]/norm;
 	}
-	//Compute pitch strength
+	//Compute pitch strength, applying the kernel
 	for(i = 0; i < NL.x; i++){
 		for(j = 0; j < k.x; j++){
 		S.v[i] += NL.m[i][j] * k.v[j];
 		}
 	}
+	//printf("\nprints S soc, pc: %f\n", pc);
+	outBinaryV(S.v, S.x, nameS);
+
+
+
 	freeiv(primos);
 	freev(k);
 	freev(prim);
@@ -850,16 +888,7 @@ vector scoreOneCandidate( vector f, matrix NL, double pc ){
 	return S;
 }
 
-matrix trasposeMat(matrix X){
-	matrix N = zerom(X.y, X.x);
-	int col, fil;
-	for(fil = 0; fil < N.x; ++fil){
-		for(col = 0; fil < N.y; ++col){
-			N.m[fil][col] = X.m[col][fil];
-		}
-	}
-	return N;
-}
+
 
 /*
 *Returns the pitch strength of several pitch candidate, applying the kernel to the matrix of signals
@@ -911,7 +940,7 @@ matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
 	outBinaryV(pc2.v, pc2.x, "pc2.xlx");
 	outBinaryV(j.v, j.x, "j2.xlx");
 	outBinaryV(L.m[0], L.x, "Lfil1.xlx");
-	outBinaryM(N.m, N.x, N.y, "N.xlx");
+	outBinaryM(N.m, N.x, N.y, "Ntrans.xlx");
 	outBinaryM(L.m, L.x, L.y, "L.xlx");
 
 	printf("Segunda parte score all candidates...\n");
@@ -964,7 +993,7 @@ matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
 void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d, matrix S, double fs, vector p0, vector t){
 	//woverlap es DIFERENTE
 	double dn, minPc, woverlap = 0.5;
-	matrix L, L2, W, Si, Si2;
+	matrix L, L2, W, Si, Si2, L2trans;
 	vector w, n, fi, l, g, mu, xz, f, f2;
 	vector j = zerov(pc.x);
 	vector k = zerov(pc.x);
@@ -1020,13 +1049,13 @@ void getWsScoreMat_PrimeMultiF0(int i, vector x, vector ws, vector pc, vector d,
 		}
 		indF2++;
 	}
-
-	Si = scoresAllCandidates(f2, L2, pc, j);
+	L2trans = trasposeMat(L2);
+	Si = scoresAllCandidates(f2, L2trans, pc, j);
 	//DEBUG
-	outBinaryV(f2.v, f2.x, "f.xlx");
+	//outBinaryV(f2.v, f2.x, "f.xlx");
 
 	outBinaryM(Si.m, Si.x, Si.y, "Si.xlx");
-	outBinaryM(L2.m, L2.x, L2.y, "L2.xlx");
+	outBinaryM(L2trans.m, L2trans.x, L2trans.y, "L2trans.xlx");
 
 	//Testing
 	printf("Valores depuracion: dn: %f, woverlap: %f\n", dn, woverlap);
