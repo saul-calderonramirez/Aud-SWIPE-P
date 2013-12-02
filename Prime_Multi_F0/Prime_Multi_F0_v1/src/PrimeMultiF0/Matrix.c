@@ -41,6 +41,38 @@
 #endif
 struct timespec start, end, startTotal, endTotal;
 
+matrix biggerReplace(double val, matrix a){
+	matrix r = zerom(a.x, a.y);
+	int i, j;
+	for(i = 0; i < r.x; ++i){
+		for(j = 0; j < r.y; ++j){
+			if(a.m[i][j] < val){
+				r.m[i][j] = 0;
+			}
+			else{
+				r.m[i][j] = a.m[i][j];
+			}
+		}
+	}
+	return r;
+}
+
+/*
+ * Substracts matrix a and b and returns the result
+ * */
+matrix substract(matrix a, matrix b){
+	assert( a.x == b.x && a.y == b.y );
+	matrix r = zerom(a.x, a.y);
+	int i, j;
+	for(i = 0; i < a.x; ++i){
+		for(j = 0; j < a.y; ++j){
+			r.m[i][j] = a.m[i][j] - b.m[i][j];
+		}
+	}
+	return r;
+}
+
+
 /*
 *Calculates the maximum element in a given array
 *@param r, the array

@@ -11,7 +11,7 @@
  * Test 1
  * */
 void provaCalcS(){
-	printf("halloo, probando probando!!\n");
+	printf("calculando la matriz S interpolada\n");
 
 	vector pc = zerov(2);
 	vector pcPrimes = zerov(2);
@@ -34,16 +34,21 @@ void provaCalcS(){
 		}
 		printf("\nArray pcPrimes:\n");
 		printv(pcPrimes);
-
 		matrix SnInterp = interp1Mat(pc, pcPrimes, S, 0);
-		printf("\nResult S\n");
-		printm(SnInterp);
+		matrix noNegsSnInterp = biggerReplace(0, SnInterp);
+		printf("\nResult SnInterp\n");
+		printm(noNegsSnInterp);
+		S = substract(S, noNegsSnInterp);
 	}
+	matrix noNegsS = biggerReplace(0, S);
+
+	printf("\nResult S\n");
+	printm(noNegsS);
 
 }
 /*
  * Test 2
- * Esta dando diferente el valor yN[0] = 0.012, cuando en matlab da yN[0] = 0.01
+ * Esta dando diferente el valor yN[0] = 0.0012, cuando en matlab da yN[0] = 0.01
 .0 * */
 void interpVectorTest(){
 	vector xO = zerov(2);
@@ -51,13 +56,13 @@ void interpVectorTest(){
 	vector yO = zerov(2);
 	yO.v[0] = 0; yO.v[1] = 0.0018;
 	vector xN = zerov(2);
-	xN.v[0] = 150; xN.v[1] = 600;
+	xN.v[0] = 150; xN.v[1] = 400;
 	vector yN = zerov(2);
 	interp1(xO, yO, xN, yN.v);
 	printf("yN:\n");
 	printv(yN);
-	double yNcurr = interp(xO.v, yO.v, 150, 0);
-	printf("Numero interpolado yNCurr: %f", yNcurr);
+	double yNcurr = interp(xO.v, yO.v, 175, 0);
+	printf("Numero interpolado yNCurr: %f\n", yNcurr);
 
 }
 
@@ -67,8 +72,8 @@ void interpVectorTest(){
  * @param argv, list of parameters
  * */
 int main(int argc, char* argv[]) {
-		executePrimeMultiF0(argc, argv);
-	//	interpVectorTest();
-		exit(EXIT_SUCCESS);
+	//	executePrimeMultiF0(argc, argv);
+	provaCalcS();
+	exit(EXIT_SUCCESS);
 
 }

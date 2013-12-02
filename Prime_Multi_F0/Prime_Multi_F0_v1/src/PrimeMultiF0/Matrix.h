@@ -73,6 +73,9 @@ typedef struct{
 } intmatrix;
 
 void outBinaryM(double** m, int x, int y, char file[]);
+
+matrix substract(matrix a, matrix b);
+matrix biggerReplace(double val, matrix a);
 vector makev(int);
 vector zerov(int);
 vector onesv(int);
