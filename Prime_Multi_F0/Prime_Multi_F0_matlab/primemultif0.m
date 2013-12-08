@@ -52,11 +52,11 @@ for i=1:length(ws)
     L = sqrt(abs(X(first:end,:)));
     % Compute scores:
     Si = scoresAllCandidates(f,L,pc(j));
-    Si = interp1(ti,Si',t,'linear',NaN)';
+    Si2 = interp1(ti,Si',t,'linear',NaN)';
     lambda = d(j(k)) - i;
     mu = ones(size(j));
     mu(k) = 1 - abs(lambda);
-    S(j,:) = S(j,:) + repmat(mu,1,size(Si,2)).*Si;
+    S(j,:) = S(j,:) + repmat(mu,1,size(Si2,2)).*Si2;
 end
 % Enhance pitch strength matrix:
 S = max(0,S);

@@ -72,8 +72,8 @@ void interpVectorTest(){
  * @param argv, list of parameters
  * */
 int main(int argc, char* argv[]) {
-	//	executePrimeMultiF0(argc, argv);
-	provaCalcS();
+	executePrimeMultiF0(argc, argv);
+	//provaCalcS();
 	exit(EXIT_SUCCESS);
 
 }

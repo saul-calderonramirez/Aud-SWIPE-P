@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
-		<item value="340" key="DIALOG_WIDTH"/>
+		<item value="342" key="DIALOG_WIDTH"/>
 		<item value="241" key="DIALOG_Y_ORIGIN"/>
+		<item value="552" key="DIALOG_HEIGHT"/>
 		<item value="1171" key="DIALOG_X_ORIGIN"/>
-		<item value="549" key="DIALOG_HEIGHT"/>
 		<item value="1|Cantarell|11.0|0|GTK|1|" key="DIALOG_FONT_NAME"/>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="true" key="wrap"/>
-		<item value="true" key="casesensitive"/>
 		<item value="false" key="isRegEx"/>
+		<item value="true" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wholeword"/>
-		<item value="getWsLoudnessMat" key="selection"/>
+		<item value="add" key="selection"/>
 		<list key="findhistory">
-			<item value="getWsLoudnessMat"/>
+			<item value="add"/>
+			<item value="assert"/>
 			<item value="getPitchCandidatesOfWs"/>
-			<item value="exitFailure"/>
-			<item value="scoresAllCandidates"/>
 			<item value="scoreOneCandidate"/>
-			<item value="specgram"/>
-			<item value="trasposeMat"/>
-			<item value="NL"/>
+			<item value="exitFailure"/>
+			<item value="sendDataToLeader"/>
+			<item value="getWsScoreMat"/>
+			<item value="sendData"/>
 		</list>
 		<list key="replacehistory">
 		</list>

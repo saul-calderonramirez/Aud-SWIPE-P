@@ -31,7 +31,7 @@ void executePrimeMultiF0(int argc, char* argv[]);
  * @param woverlap, window overlap
  * @param f, frequencies vector, filled by the specgram function
  * */
-matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, double dn, vector f);
+matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, double dn, vector f, vector ti);
 
 /*
 * Primary utility function for multi pitch extraction

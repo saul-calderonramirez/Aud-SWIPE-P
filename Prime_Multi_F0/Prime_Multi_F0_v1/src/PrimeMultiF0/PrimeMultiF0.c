@@ -13,7 +13,7 @@
 #define MI 100
 #define MA 500
 #define ST .0001
-#define DT .001
+
 
 #define LEADER	0
 
@@ -27,7 +27,7 @@
 #define DLOG2P .0104167 // 1/96
 
 #define ST .0001  // Feel free to change these
-#define DT .001
+#define DT .01
 #define MIN 100.
 #define MAX  600.
 #define VNUM                         1.5 // Current version
@@ -127,9 +127,9 @@ void getPitchCandidatesOfWs(int i, vector ws, vector d, vector* ptrJ, vector* pt
  * @param L, in each column a real part of the FFT, N columns as N FFTs, as for N time windows
  * Arrays  n and fi
  * */
-matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, double dn, vector f){
+matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, double dn, vector f, vector ti){
 		int p, ind, col, copia, a;
-		vector  fi, n, ti;
+		vector  fi, n;
 		matrix L, nL;
 		//delta in the frequency domain
 		double df = fs / ws;
@@ -191,7 +191,7 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 		}
 		fftw_destroy_plan(plan);
 		//n must be converted to time scale, using the sampling frequency fs
-		ti = zerov(n.x);
+		//ti = zerov(n.x);
 		for(ind = 0; ind < n.x; ++ind){
 			ti.v[ind] = n.v[ind] / fs;
 		}
@@ -205,6 +205,8 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 		outBinaryV(ti.v, ti.x, "ti.xlx");
 		outBinaryM(nL.m, nL.x, nL.y, "L.xlx");
 		//f and L frequency range must be from zero to fs/2, with size ws/2 +1
+
+
 		return nL;
 }
 
@@ -315,6 +317,7 @@ vector scoreOneCandidate( vector f, matrix NL, double pc ){
 matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
 	//Create pitch salience matrix
 	if(DEBUG == 1)printf("\n		Create pitch salience matrix...\n");
+	//pitch candidates per rows and time signal per columns
 	matrix S = zerom(j.x, L.x);
 	vector k = zerov(j.x);
 	int q, a, find, i, c;
@@ -422,7 +425,7 @@ void getWsScoreMat(int i, vector x, vector ws, vector pc, vector d, matrix S, do
 	vector w, n, fi, l, g, mu, xz, f, f2;
 	vector j = zerov(pc.x);
 	vector k = zerov(pc.x);
-
+	int ind, p;
 	//dn es DIFERENTE
 	//Hop size
 	//p0, window sizes used by the pitch candidate
@@ -445,9 +448,14 @@ void getWsScoreMat(int i, vector x, vector ws, vector pc, vector d, matrix S, do
 	//we create the frequencies array
 	f = zerov((ws.v[i]/2) + 1);
 	//calculates the spectogram of the signal, that is a fourier transform for every desired time interval
-	L = specgram(xz, ws.v[i], fs, w, woverlap, dn, f);
+
+	//Important initialization before specgram
+	vector ti = zerov(ceil((xz.x - ws.v[i] + 1.) * (1. / dn)));
+
+	L = specgram(xz, ws.v[i], fs, w, woverlap, dn, f, ti);
 	//Computes scores
 	//Debugging
+
 
 	//Compute loudness at required frequency range:
 	minPc = pc.v[0] / 4;
@@ -473,12 +481,32 @@ void getWsScoreMat(int i, vector x, vector ws, vector pc, vector d, matrix S, do
 	L2trans = trasposeMat(L2);
 	//scoresAllCandidates works with a trasposed matrix L2!
 	Si = scoresAllCandidates(f2, L2trans, pc, j);
+	matrix SiTrans = trasposeMat(Si);
+	//Si = interp1(ti,Si',t,'linear',NaN)';
+	Si2 = interp1Mat(ti, t, SiTrans, 0);
+
+	//Compute contribution of this window size to pitch strength
+	/*if(DEBUG==1)printf("\n	Compute contribution of this window size to pitch strength...\n");
+	mu = onesv(j.x);
+	for(ind = 0; ind < k.x; ind++){
+		mu.v[(int)k.v[ind]] = 1 - fabs(d.v[(int)j.v[(int)k.v[ind]]]-(i+1));
+	}
+	//The parent process makes its own job, in case that there is only one process, runs normally
+
+	for(ind = 0; ind < j.x; ind++){
+		for(p = 0; p < S.y; p++){
+		 S.m[(int)j.v[ind]][p]  += mu.v[ind] * Si2.m[ind][p];
+		}
+	}*/
+
+
 	//DEBUG
-	//outBinaryV(f2.v, f2.x, "f.xlx");
-
+	outBinaryM(Si2.m, Si2.x, Si2.y, "Si2.xlx");
 	outBinaryM(Si.m, Si.x, Si.y, "Si.xlx");
-	outBinaryM(L2trans.m, L2trans.x, L2trans.y, "L2trans.xlx");
+	outBinaryV(ti.v, ti.x, "ti.xlx");
+	outBinaryV(t.v, t.x, "t.xlx");
 
+	outBinaryM(L2trans.m, L2trans.x, L2trans.y, "L2trans.xlx");
 	//Testing
 	printf("Valores depuracion: dn: %f, woverlap: %f\n", dn, woverlap);
 	outBinaryV(j.v, j.x, "j.xlx");
@@ -508,7 +536,14 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
 	//x contains the sound signal, reads the signal from file, fs the sampling frequency and frames are the total number of samples
 	x = readSoundFile(wav, &nyquist, &fs, &soundLength, &frames);
 	//Defines the time  array
-	t = zerov(ceil((double)((double)frames / (double)fs) * (1. / dt) + 1));
+	double lt = ceil(((double)frames / (double)fs) / dt);
+	t = zerov(lt);
+	a = 0;
+	//The time array t is filled
+	for(i = 0; i < t.x; i++, a = a + dt){
+		t.v[i] = a;
+	}
+	outBinaryV(t.v, t.x, "tNuevo.xlx");//PASO prueba1
 	//Defines the  pitch candidates array pc
 	//Default value
 	dlog2p = 1./48.;
@@ -541,6 +576,7 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
 	//S matrix is the Score table for each pitch candidate, each row corresonds to a pitch candidate, and each column, to a different time interval
 	//Pitch Strength matrix, with the Partial score of a set of window sizes
 	S = zerom(pc.x, t.x);
+	printf("longo y S: %d\n", S.y);
 	//p0 contains the optimal pitch candidate for every window size
 	p0 = zerov(ws.x);
 	for(i = 0; i < p0.x; i++) p0.v[i] = 8 *  fs / ws.v[i];
@@ -717,7 +753,9 @@ void executePrimeMultiF0(int argc, char* argv[]){
 		if (dt < .001) {
 			fprintf(stderr, "Timestep must be >= 0.001 (1 ms), set to %.3f.\n", DT);
 			dt = DT;
+			printf("PUSO DEFECTO dt: %f\n\n", dt);
 		}
+		printf("RECEIVED dt: %f\n\n", dt);
 		primeMulti_F0(wav, min, max, dt);
 }
 

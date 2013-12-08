@@ -19,7 +19,7 @@
 #define MI 100
 #define MA 500
 //#define ST .0001
-#define DT .001
+#define DT .01
 #define PARALELISM 1
 #define ARGC 12 //plus /0
 
