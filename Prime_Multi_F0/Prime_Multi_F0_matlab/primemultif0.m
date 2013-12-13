@@ -60,10 +60,12 @@ for i=1:length(ws)
 end
 % Enhance pitch strength matrix:
 S = max(0,S);
-for i = primes(pc(end)/pc(1));
+primesN = primes(pc(end)/pc(1));
+for i = primesN;
     S = S - max(0,interp1(pc,S,i*pc,'spline',0));
 end
 S = max(0,S);
+disp('Prime multi F0 finished');
 
 function S = scoresAllCandidates(f,L,pc)
 % Create score matrix:
