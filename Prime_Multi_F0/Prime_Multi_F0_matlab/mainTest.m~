@@ -7,11 +7,12 @@ function mainTest
    S = primemultif0(x, fs, plim, dt);
    time = toc;
    tStart = tic;
-   pause(1);   
-   tElapsed = toc(tStart)
+   pause(1);
+   
+     tElapsed = toc(tStart)
    
    disp('total execution time')
-   tElapsed
+    tElapsed = toc(tStart)
    figure;
    plot(S);
    

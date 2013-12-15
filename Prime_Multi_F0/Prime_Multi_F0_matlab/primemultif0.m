@@ -4,6 +4,11 @@ function S = primemultif0(x,fs, plim, dt)
 % every DT seconds, based on the signal X
 % with sampling frequency FS. PC must be an
 % increasing sequence.
+timesEx = zeros(1, 5);
+
+
+tStart = tic;
+
 dlog2p = 1/48;
 if length(plim) == 2 % We assume are the limits of the range
     log2pc = ( log2(plim(1)): dlog2p: log2(plim(2)) )';
@@ -22,6 +27,12 @@ S = zeros(length(pc),length(t)); % scores
 limLogWs = round(log2(8*fs./[pc(1) min(pc(1),pc(end))]));
 ws = 2.^[limLogWs(1):-1:limLogWs(end)]; % window sizes
 pO = 8*fs./ws; % optimal pitches for window sizes
+
+ tElapsed = toc(tStart);
+ timesEx(1) = tElapsed;
+ tags{1} = 'Pitch candidates arrangement time';
+
+
 % Determine window sizes used by each pitch candidate:
 d = 1 + log2pc - log2(8*fs./ws(1));
 for i=1:length(ws)
@@ -34,8 +45,18 @@ for i=1:length(ws)
     o = max(0,round(ws(i) - dn)); % window overlap
     %One fourier transform per column
     %f, frequencies at which the fft was calculated
+    tStart = tic;
+    
+    
     [X,f,ti] = specgram(xzp,ws(i),fs,w,o);
+    
+    tElapsed = toc(tStart);    
+    timesEx(2) = tElapsed + timesEx(2);    
+    tags{2} = 'Specgram calculation time';
+
+    
     % Select candidates that use this window size:
+    tStart = tic;
     if length(ws) == 1
         j=(1:length(pc))'; k=[];
     elseif i == length(ws)
@@ -48,6 +69,14 @@ for i=1:length(ws)
     % Compute loudness at required frequency range:
     first = find(f>pc(j(1))/4,1,'first');
     f = f(first:end);
+    
+    tElapsed = toc(tStart); 
+    timesEx(3) = tElapsed + timesEx(3);    
+    tags{3} = 'Determination of pitch candidates corresponding to ws time';
+    
+    
+    tStart = tic;
+    
     %root of the spectogram
     L = sqrt(abs(X(first:end,:)));
     % Compute scores:
@@ -57,14 +86,29 @@ for i=1:length(ws)
     mu = ones(size(j));
     mu(k) = 1 - abs(lambda);
     S(j,:) = S(j,:) + repmat(mu,1,size(Si2,2)).*Si2;
+    
+    tElapsed = toc(tStart); 
+    timesEx(4) = tElapsed + timesEx(4);    
+    tags{4} = 'Scores of all candidates time';
+    
 end
 % Enhance pitch strength matrix:
+
+tStart = tic;
+
 S = max(0,S);
 primesN = primes(pc(end)/pc(1));
 for i = primesN;
     S = S - max(0,interp1(pc,S,i*pc,'spline',0));
 end
 S = max(0,S);
+
+    
+tElapsed = toc(tStart); 
+timesEx(5) = tElapsed + timesEx(5);    
+tags{5} = 'Post processing time of the scores';
+
+
 disp('Prime multi F0 finished');
 
 function S = scoresAllCandidates(f,L,pc)

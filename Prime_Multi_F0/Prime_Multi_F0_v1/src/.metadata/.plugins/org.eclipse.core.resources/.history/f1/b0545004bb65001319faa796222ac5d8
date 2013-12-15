@@ -634,7 +634,7 @@ matrix postprocessS(matrix S, vector pc){
 	vector pcPrimes = zerov(pc.x);
 	int i, j;
 	noNegsS = biggerReplace(0, S);
-	#pragma omp parallel for private(i, j)
+	//#pragma omp parallel for private(i, j)
 	for(i = 0; i < numsPrimesReason.x; ++i){
 		printf("numsPrimes reason: %d\n", i);
 		//printf("i: %d\n", numsPrimesReason.v[i]);
