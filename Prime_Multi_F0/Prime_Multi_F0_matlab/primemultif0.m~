@@ -4,7 +4,7 @@ function S = primemultif0(x,fs, plim, dt)
 % every DT seconds, based on the signal X
 % with sampling frequency FS. PC must be an
 % increasing sequence.
-timesEx = zeros(1, 4);
+timesEx = zeros(1, 5);
 
 
 tStart = tic;
@@ -70,11 +70,12 @@ for i=1:length(ws)
     first = find(f>pc(j(1))/4,1,'first');
     f = f(first:end);
     
-    
+    tElapsed = toc(tStart); 
     timesEx(3) = tElapsed + timesEx(3);    
     tags{3} = 'Determination of pitch candidates corresponding to ws time';
     
     
+    tStart = tic;
     
     %root of the spectogram
     L = sqrt(abs(X(first:end,:)));
@@ -85,14 +86,32 @@ for i=1:length(ws)
     mu = ones(size(j));
     mu(k) = 1 - abs(lambda);
     S(j,:) = S(j,:) + repmat(mu,1,size(Si2,2)).*Si2;
+    
+    tElapsed = toc(tStart); 
+    timesEx(4) = tElapsed + timesEx(4);    
+    tags{4} = 'Scores of all candidates time';
+    
 end
 % Enhance pitch strength matrix:
+
+tStart = tic;
+
 S = max(0,S);
 primesN = primes(pc(end)/pc(1));
 for i = primesN;
-    S = S - max(0,interp1(pc,S,i*pc,'spline',0));
+    primesPcs = i*pc;
+    temp = interp1(pc,S, primesPcs,'linear',0);
+    temp2 = max(0, temp);
+    S = S - max(0, temp);
 end
 S = max(0,S);
+
+    
+tElapsed = toc(tStart); 
+timesEx(5) = tElapsed + timesEx(5);    
+tags{5} = 'Post processing time of the scores';
+
+
 disp('Prime multi F0 finished');
 
 function S = scoresAllCandidates(f,L,pc)

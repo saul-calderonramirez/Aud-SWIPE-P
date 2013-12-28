@@ -99,7 +99,10 @@ tStart = tic;
 S = max(0,S);
 primesN = primes(pc(end)/pc(1));
 for i = primesN;
-    S = S - max(0,interp1(pc,S,i*pc,'spline',0));
+    primesPcs = i*pc;
+    temp = interp1(pc,S, primesPcs,'linear',0);
+    temp2 = max(0, temp);
+    S = S - max(0, temp2);
 end
 S = max(0,S);
 

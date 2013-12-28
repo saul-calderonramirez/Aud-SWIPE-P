@@ -285,7 +285,7 @@ vector scoreOneCandidate( vector f, matrix NL, double pc ){
 	norm = sqrt(norm);
 	//printf("PC: %f, normK: %f\n", pc, norm);
 	//K+- normalize kernel
-	//Normalization SEEMED not necessary in Prime multi F0
+
 
 	for(i = 0; i < k.x; i++){
 		k.v[i] = k.v[i]/norm;
@@ -605,6 +605,7 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
 		getWsScoreMat(i, x, ws, pc, d, S, fs, p0, t);
 	}
 	//interpolates prime pitch candidates
+	outBinaryM(S.m, S.x, S.y, "SantesPostProc.xlx");
 	Sout = postprocessS(S, pc);
 	//Testing
 	outBinaryV(pc.v, pc.x, "pc.xlx");//PASO prueba1
@@ -618,7 +619,7 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
 	freev(log2pc);
 	freev(logWs);
 	freev(ws);
-	return S;
+	return Sout;
 }
 
 
@@ -634,24 +635,41 @@ matrix postprocessS(matrix S, vector pc){
 	vector pcPrimes = zerov(pc.x);
 	int i, j;
 	noNegsS = biggerReplace(0, S);
-	#pragma omp parallel for private(i, j)
+	outBinaryM(noNegsS.m, noNegsS.x, noNegsS.y, "SNoNegs.xlx");
+	//#pragma omp parallel for private(i, j) no paralleism can be done with such workflow
 	for(i = 0; i < numsPrimesReason.x; ++i){
-		printf("numsPrimes reason: %d\n", i);
+		matrix SnInterp;
+		char nameF[100];
+		char nameSnInterp[100];
+		char nameSout[100];
+		char nameSnInterpNoNeg[100];
+		printf("numsPrimes reason: %d\n", numsPrimesReason.v[i]);
 		//printf("i: %d\n", numsPrimesReason.v[i]);
 		int primeNum = numsPrimesReason.v[i];
 		for(j = 0; j < pcPrimes.x; ++j){
 			pcPrimes.v[j] = pc.v[j] * primeNum;
 		}
-		/*printf("\nArray pcPrimes:\n");
-		printv(pcPrimes);*/
-		matrix SnInterp = interp1Mat(pc, pcPrimes, noNegsS, 0);
+
+		SnInterp = interp1Mat(pc, pcPrimes, noNegsS, 0);
 		matrix noNegsSnInterp = biggerReplace(0, SnInterp);
-		//printf("\nResult SnInterp\n");
-		//printm(noNegsSnInterp);
-		Sout = substract(noNegsS, noNegsSnInterp);
-	}
-	noNegsSout = biggerReplace(0, Sout);
-	freem(Sout);
+		matrix noNegsSTemp = substract(noNegsS, noNegsSnInterp);
+		freem(noNegsS);
+		//to avoid memory leaks
+		noNegsS = noNegsSTemp;
+
+		freem(noNegsSnInterp);
+		/*sprintf(nameF, "primesArray_%d.xlx", i);
+		sprintf(nameSnInterp, "SnInterpNew_%d.xlx", i);
+		sprintf(nameSout, "Sout_%d.xlx", i);
+		sprintf(nameSnInterpNoNeg, "SnInterpNoNeg_%d.xlx", i);
+		printf("\nArray pcPrimes:\n");
+		printv(pcPrimes);
+		outBinaryM(SnInterp.m, SnInterp.x, SnInterp.y, nameSnInterp);
+		outBinaryV(pcPrimes.v, pcPrimes.x, nameF);
+		outBinaryM(Sout.m, Sout.x, Sout.y, nameSout);*/
+	}//free memory!!
+	noNegsSout = biggerReplace(0, noNegsS);
+	//freem(Sout);
 	freem(noNegsS);
 	freeiv(numsPrimesReason);
 	freev(pcPrimes);
