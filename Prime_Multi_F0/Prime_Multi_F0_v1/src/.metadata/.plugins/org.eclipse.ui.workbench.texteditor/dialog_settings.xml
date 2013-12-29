@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
-		<item value="346" key="DIALOG_WIDTH"/>
+		<item value="348" key="DIALOG_WIDTH"/>
 		<item value="262" key="DIALOG_Y_ORIGIN"/>
-		<item value="558" key="DIALOG_HEIGHT"/>
-		<item value="1308" key="DIALOG_X_ORIGIN"/>
+		<item value="807" key="DIALOG_X_ORIGIN"/>
+		<item value="561" key="DIALOG_HEIGHT"/>
 		<item value="1|Cantarell|11.0|0|GTK|1|" key="DIALOG_FONT_NAME"/>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="true" key="wrap"/>
-		<item value="false" key="isRegEx"/>
 		<item value="false" key="casesensitive"/>
+		<item value="false" key="isRegEx"/>
 		<item value="false" key="incremental"/>
-		<item value="true" key="wholeword"/>
-		<item value="pragma omp parallel for private" key="selection"/>
+		<item value="false" key="wholeword"/>
+		<item value="scoresAllCandidates" key="selection"/>
 		<list key="findhistory">
-			<item value="pragma omp parallel for private"/>
-			<item value="ind"/>
-			<item value="pragma"/>
+			<item value="scoresAllCandidates"/>
+			<item value="Tercer parte"/>
 			<item value="getWsScoreMat"/>
-			<item value="Si2"/>
-			<item value="longo"/>
-			<item value="vector t"/>
-			<item value="0.001"/>
+			<item value="scoreOneCandidate"/>
+			<item value="scoresAll"/>
+			<item value="primeMulti"/>
+			<item value="scoreAll"/>
+			<item value="N.xlx"/>
 		</list>
 		<list key="replacehistory">
 		</list>

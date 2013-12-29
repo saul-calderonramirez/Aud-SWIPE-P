@@ -24,7 +24,7 @@ t = [0:dt:length(x)/fs]'; % time
 %log2pc = log2(pc);
 S = zeros(length(pc),length(t)); % scores
 %PORQUE HACE ESE MIN??
-limLogWs = round(log2(8*fs./[pc(1) min(pc(1),pc(end))]));
+limLogWs = round(log2(8*fs./[pc(1) pc(end)]));
 ws = 2.^[limLogWs(1):-1:limLogWs(end)]; % window sizes
 pO = 8*fs./ws; % optimal pitches for window sizes
 

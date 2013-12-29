@@ -32,5 +32,5 @@
 #include <sndfile.h> // http://www.mega-nerd.com/libsndfile/
 #define EXE_NAME "aswipep"
 //#include "MPIMatlabCommunicator.h"
-#define DEBUG 0
+#define DEBUG 1
 #endif
