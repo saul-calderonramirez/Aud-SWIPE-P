@@ -45,7 +45,7 @@
 
 #include "includes.h"
 
-#define DEBUG 0
+
 
 // vector stuff
 typedef struct{

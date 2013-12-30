@@ -32,6 +32,8 @@
 #define MAX  600.
 #define VNUM                         1.5 // Current version
 
+clocksArray totalTime;
+
 matrix trasposeMat(matrix X){
 	matrix N = zerom(X.y, X.x);
 	int col, fil;
@@ -52,7 +54,6 @@ matrix trasposeMat(matrix X){
  * @param ptrK
  * */
 void getPitchCandidatesOfWs(int i, vector ws, vector d, vector* ptrJ, vector* ptrK){
-	printf("get pitch candidates WS: %d \n", ws.v[i]);
 	int cont, ind;
 		//Determine pitch candidates that use this window size i
 	if(ws.x == 1){
@@ -159,8 +160,10 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 		if(DEBUG==1)printf("\nCalculating the specgram in parallel...\n");
 		//spectogram calculation is done in parallel, with a time window per thread
 		fftw_plan plan = fftw_plan_dft_r2c_1d(ws, window, fo, FFTW_ESTIMATE);
+		omp_set_num_threads(64);
 		#pragma omp parallel for private(ind, col, window, copia, fo)
 		for(p = 0; p < n.x; p++){
+			//printf("Num threads: %d", omp_get_num_threads());
 			vector sl = zerov(ws);//Specific loudness
 			//Compute specific loudness
 			//current window to compute
@@ -203,11 +206,11 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 			}
 		}
 		//Debugging
-		outBinaryV(ti.v, ti.x, "ti.xlx");
-		outBinaryM(nL.m, nL.x, nL.y, "L.xlx");
+		if(DEBUG == 1){
+			outBinaryV(ti.v, ti.x, "specgram_ti.xlx");
+			outBinaryM(nL.m, nL.x, nL.y, "specgram_L.xlx");
+		}
 		//f and L frequency range must be from zero to fs/2, with size ws/2 +1
-
-
 		return nL;
 }
 
@@ -221,21 +224,6 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 */
 vector scoreOneCandidate( vector f, matrix NL, double pc ){
 	int n,i,j;
-	char nameF[50];
-	char nameNL[50];
-	char nameS[50];
-	char namePrims[50];
-	char nameK[50];
-
-	//DEBUGGING
-	sprintf(nameF, "fSOC_%f.xlx", pc);
-	sprintf(nameNL, "NLSOC_%f.xlx", pc);
-	sprintf(nameS, "SSOC_%f.xlx", pc);
-	sprintf(namePrims, "PrimesSOC_%f.xlx", pc);
-	sprintf(nameK, "KSOC_%f.xlx", pc);
-	outBinaryV(f.v, f.x, nameF);
-	outBinaryM(NL.m, NL.x, NL.y, nameNL);
-
 	if(DEBUG == 1)printf("Init score one candidate: %f\n", pc);
 	vector S = zerov(NL.x);
 	double p = f.v[f.x-1]/pc -0.75;//Number of harmonics
@@ -274,12 +262,7 @@ vector scoreOneCandidate( vector f, matrix NL, double pc ){
 		}
 	}
 	if(DEBUG == 1)printf("Kernel is built\n");
-
-	//Debug
-	outBinaryV(k.v, k.x, nameK);
-	outBinaryV(prim.v, prim.x, namePrims);
 	//Envelope is not necessary in prime multi F0
-
 	double norm = 0;
 	for(i = 0; i < k.x; i++){
 		if(k.v[i] > 0)
@@ -300,8 +283,26 @@ vector scoreOneCandidate( vector f, matrix NL, double pc ){
 		}
 	}
 	if(DEBUG == 1)printf("Score one candidate finished\n");
-	//printf("\nprints S soc, pc: %f\n", pc);
-	outBinaryV(S.v, S.x, nameS);
+	if(DEBUG == 1){
+		//DEBUGGING
+		char nameF[50];
+		char nameNL[50];
+		char nameS[50];
+		char namePrims[50];
+		char nameK[50];
+		sprintf(nameF, "Debug_Logs/scoreOneCandidate_fSOC_%f.xlx", pc);
+		sprintf(nameNL, "Debug_Logs/scoreOneCandidate_NLSOC_%f.xlx", pc);
+		sprintf(nameS, "Debug_Logs/scoreOneCandidate_SSOC_%f.xlx", pc);
+		sprintf(namePrims, "Debug_Logs/scoreOneCandidate_PrimesSOC_%f.xlx", pc);
+		sprintf(nameK, "Debug_Logs/scoreOneCandidate_KSOC_%f.xlx", pc);
+		outBinaryV(f.v, f.x, nameF);
+		outBinaryM(NL.m, NL.x, NL.y, nameNL);
+		outBinaryV(S.v, S.x, nameS);
+		//Debug
+		outBinaryV(k.v, k.x, nameK);
+		outBinaryV(prim.v, prim.x, namePrims);
+	}
+
 	freeiv(primos);
 	freev(k);
 	freev(prim);
@@ -320,7 +321,7 @@ vector scoreOneCandidate( vector f, matrix NL, double pc ){
 */
 matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
 	//Create pitch salience matrix
-	if(DEBUG == 1)printf("\n		Create pitch salience matrix...\n");
+	if(DEBUG == 1)printf("\nCreate pitch salience matrix...\n");
 	//pitch candidates per rows and time signal per columns
 	vector k, pc2;
 	matrix S, N;
@@ -331,7 +332,6 @@ matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
 	//selects the pitch candidates corresponding to the current window size
 	//pc2 new array with the corresponding pitch candidates to the window size
 	pc2 = zerov(j.x);
-	printf("Primer parte score all candidates...\n");
 	for(q = 0; q < j.x; q++){
 		//CAMBIO!!! antes jalaba basura porque j inicia desde 1
 		pc2.v[q] = pc.v[(int)j.v[q] ];
@@ -347,7 +347,7 @@ matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
 		ant = k.v[q];
 	}
 	//Loudness normalization factor
-	if(DEBUG == 1)printf("\n		Loudness normalization factor...\n");
+	if(DEBUG == 1)printf("\nLoudness normalization factor...\n");
 	//Hasta aqui va igual,se necesita transponer la matrix L
 	N = zerom(L.x, L.y);
 	int fil,col;
@@ -358,24 +358,15 @@ matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
 			N.m[fil][col] = suma;
 		}
 	}
-	//DEBUG
-
-	outBinaryV(pc2.v, pc2.x, "pc2.xlx");
-	outBinaryV(j.v, j.x, "j2.xlx");
-
-	outBinaryM(N.m, N.x, N.y, "Ntrans.xlx");
-	outBinaryM(L.m, L.x, L.y, "L.xlx");
-
-	printf("Segunda parte score all candidates...\n");
 	double val;
 	matrix NL;
 	vector f2, n;
-	if(DEBUG == 1)printf("\n		Normalize Loudness...\n");
-	if(DEBUG == 1)printf("\n		Compute each candidate's pitch strength...\n");
+	if(DEBUG == 1)printf("\nNormalize Loudness...\n");
+	if(DEBUG == 1)printf("\nCompute each candidate's pitch strength...\n");
 	// Thread parallelization 2, each thread calculates the score of a pitch candidate
-	//#pragma omp parallel for private (NL, f2, n, val, i, a, c)
+
+	#pragma omp parallel for private (NL, f2, n, val, i, a, c)
 	for(q = 0; q < pc2.x; q++){
-		printf("current pitch candidate to calculate score: %f\n", pc2.v[q]);
 		NL = zerom(L.x, L.y-(int)k.v[q]);
 		f2 = zerov(L.y-(int)k.v[q]);
 		n = zerov(N.x);
@@ -407,12 +398,15 @@ matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
 		freev(n);
 		freem(NL);
 	}
-	printf("Tercer parte score all candidates...\n");
+	if(DEBUG == 1){
+		outBinaryV(pc2.v, pc2.x, "Debug_Logs/scoresAllCandidates_pc2.xlx");
+		outBinaryV(j.v, j.x, "Debug_Logs/scoresAllCandidates_j2.xlx");
+		outBinaryM(N.m, N.x, N.y, "Debug_Logs/scoresAllCandidates_Ntrans.xlx");
+		outBinaryM(L.m, L.x, L.y, "Debug_Logs/scoresAllCandidates_L.xlx");
+	}
 	freev(k);
 	freev(pc2);
 	freem(N);
-	printf("FREED memory\n");
-	//Hasta aqui va BIEN
 	return S;
 }
 
@@ -440,11 +434,10 @@ void getWsScoreMat(int i, vector x, vector ws, vector pc, vector d, matrix S, do
 	dn = maxim(1, round(4  * fs / p0.v[i] ));//PASO prueba1
 	//calculates the hanning window to use
 	w = zerov(ws.v[i]);// PASO prueba 1
-	printf("LENGTH W: %d\n", w.x);
 	Hanning(w.v,w.x);
 	//calculates the window overlap DIFERENTE
 	woverlap = maxim(0, round(ws.v[i] - dn));//PASO prueba1
-	if(DEBUG==1)printf("\n	Zero pad signal...\n");
+	if(DEBUG == 1)printf("\n	Zero pad signal...\n");
 	//according to the window size, different pitch candidates will be processed
 	getPitchCandidatesOfWs(i, ws, d, &j, &k);//j PASO prueba 1
 	// Zero padded signal, an array with the original signal copied in an array with a multiple of window size number of samples
@@ -460,7 +453,7 @@ void getWsScoreMat(int i, vector x, vector ws, vector pc, vector d, matrix S, do
 	//and a time intervals go along the columns)
 	//Important initialization before specgram
 	vector ti = zerov(ceil((xz.x - ws.v[i] + 1.) * (1. / dn)));
-
+	//spectogram calculation
 	L = specgram(xz, ws.v[i], fs, w, woverlap, dn, f, ti);
 	//Computes scores
 	//Compute loudness at required frequency range:
@@ -488,7 +481,6 @@ void getWsScoreMat(int i, vector x, vector ws, vector pc, vector d, matrix S, do
 	//scoresAllCandidates works with a trasposed matrix L2!
 	Si = scoresAllCandidates(f2, L2trans, pc, j);
 	matrix SiTrans = trasposeMat(Si);
-	//Si = interp1(ti,Si',t,'linear',NaN)';
 	Si2 = interp1Mat(ti, t, SiTrans, 0);
 	if(DEBUG==1)printf("\n	Matrix interpolated\n");
 	Si2trans = trasposeMat(Si2);
@@ -497,10 +489,9 @@ void getWsScoreMat(int i, vector x, vector ws, vector pc, vector d, matrix S, do
 	mu = onesv(j.x);
 	for(ind = 0; ind < k.x; ind++){
 		//j starts in 1 and not in 0, POSIBLE FLAW
-		//printf("INDEX: %F\n", d.v[(int)j.v[(int)k.v[ind]]]-(i+1));
 		mu.v[(int)k.v[ind]] = 1 - fabs(d.v[(int)j.v[(int)k.v[ind]]]-(i+1));
 	}
-	if(DEBUG==1)printf("\nMu construction finished...\n");
+	if(DEBUG == 1)printf("\nMu construction finished...\n");
 	for(ind = 0; ind < j.x; ind++){
 		for(p = 0; p < S.y; p++){
 		  //matlab to c indexing, generated a problem previously, j starts in 1 and not in 0, POSIBLE FLAW
@@ -508,25 +499,22 @@ void getWsScoreMat(int i, vector x, vector ws, vector pc, vector d, matrix S, do
 		  S.m[x][p] += mu.v[ind] * Si2trans.m[ind][p];
 		}
 	}
-	//hasta aqui va completamente igual con un tamaño de ventana
-	printf("TERMINO de copiar S\n");
-	//DEBUG
+	if(DEBUG == 1){
+		outBinaryM(S.m, S.x, S.y, "Debug_Logs/getWsScoreMat_S.xlx");
+		outBinaryM(Si2.m, Si2.x, Si2.y, "Debug_Logs/getWsScoreMat_Si2.xlx");
+		outBinaryM(Si.m, Si.x, Si.y, "Debug_Logs/getWsScoreMat_Si.xlx");
+		outBinaryV(ti.v, ti.x, "Debug_Logs/getWsScoreMat_ti.xlx");
+		outBinaryV(t.v, t.x, "Debug_Logs/getWsScoreMat_t.xlx");
+		outBinaryV(mu.v, mu.x, "Debug_Logs/getWsScoreMat_mu.xlx");
+		outBinaryM(L2trans.m, L2trans.x, L2trans.y, "Debug_Logs/getWsScoreMat_L2trans.xlx");
+		//Testing
+		outBinaryV(j.v, j.x, "Debug_Logs/getWsScoreMat_j.xlx");
+		outBinaryV(k.v, k.x, "Debug_Logs/getWsScoreMat_k.xlx");
+		outBinaryV(d.v, d.x, "Debug_Logs/getWsScoreMat_d.xlx");
+		outBinaryV(w.v, w.x, "Debug_Logs/getWsScoreMat_w.xlx");
+		outBinaryV(xz.v, xz.x, "Debug_Logs/getWsScoreMat_xz.xlx");
+	}
 
-	outBinaryM(S.m, S.x, S.y, "Swsscoremat.xlx");
-	outBinaryM(Si2.m, Si2.x, Si2.y, "Si2.xlx");
-	outBinaryM(Si.m, Si.x, Si.y, "Si.xlx");
-	outBinaryV(ti.v, ti.x, "ti.xlx");
-	outBinaryV(t.v, t.x, "t.xlx");
-	outBinaryV(mu.v, mu.x, "mu.xlx");
-
-	outBinaryM(L2trans.m, L2trans.x, L2trans.y, "L2trans.xlx");
-	//Testing
-	printf("Valores depuracion: dn: %f, woverlap: %f\n", dn, woverlap);
-	outBinaryV(j.v, j.x, "j.xlx");
-	outBinaryV(k.v, k.x, "k.xlx");
-	outBinaryV(d.v, d.x, "d.xlx");
-	outBinaryV(w.v, w.x, "w.xlx");
-	outBinaryV(xz.v, xz.x, "xz.xlx");
 	//Gets the pitch candidates associated to the current window size
 	freem(L);
 	freem(L2);
@@ -553,7 +541,7 @@ void getWsScoreMat(int i, vector x, vector ws, vector pc, vector d, matrix S, do
  * candidate, the second one the second likely note in the same interval and so on
  */
 matrix primeMulti_F0(char wav[], double min, double max, double dt){
-	printf("Prime multi F0 started\n");
+	if(DEBUG == 1)printf("Prime multi F0 started\n");
 	vector t, ws, logWs, p0, log2pc, pc, d, x;
 	matrix S, Sout;
 	double a, dlog2p, dlog2p_max, nyquist, nyquist2, fs;
@@ -568,7 +556,6 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
 	for(i = 0; i < t.x; i++, a = a + dt){
 		t.v[i] = a;
 	}
-	outBinaryV(t.v, t.x, "tNuevo.xlx");//PASO prueba1
 	//Defines the  pitch candidates array pc
 	//Default value
 	dlog2p = 1./48.;
@@ -593,18 +580,14 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
 	logWs = zerov(2);
 	logWs.v[0] = maxvent;
 	logWs.v[1] = minvent;
-	printf("Esto es min  %f fs:  %f\n", min, fs);
-	printf("Esto es maxvent: %d  minvent: %d\n", maxvent, minvent);
 
 	//power-of-two window sizes
 	ws = zerov(maxvent - minvent + 1);
-	printf("NUM WS: %d\n", ws.x);
+	if(DEBUG == 1)printf("Number of WINDOW SIZES: %d\n", ws.x);
 	for(a = maxvent,i = 0; a >= minvent; a--, i++) ws.v[i] = pow(2, a);
 	//S matrix is the Score table for each pitch candidate, each row corresonds to a pitch candidate, and each column, to a different time interval
 	//Pitch Strength matrix, with the Partial score of a set of window sizes
 	S = zerom(pc.x, t.x);
-	outBinaryV(ws.v, ws.x, "ws.xlx");//NO PASO prueba2
-	printf("longo y S: %d\n", S.y);
 	//p0 contains the optimal pitch candidate for every window size
 	p0 = zerov(ws.x);
 	for(i = 0; i < p0.x; i++) p0.v[i] = 8 *  fs / ws.v[i];
@@ -615,18 +598,20 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
 
 	//Calculates a score for every window size
 	for(i = 0; i < ws.x; ++i){
-		printf("---------------------CURRENT WS: %f---------------------\n", ws.v[0]);
+		if(DEBUG == 1)printf("---------------------Current Window size: %f---------------------\n", ws.v[0]);
 		getWsScoreMat(i, x, ws, pc, d, S, fs, p0, t);
 	}
 	//interpolates prime pitch candidates
-	outBinaryM(S.m, S.x, S.y, "SantesPostProc.xlx");
 	Sout = postprocessS(S, pc);
 	//Testing
-	outBinaryV(pc.v, pc.x, "pc.xlx");//PASO prueba1
-
-	outBinaryV(d.v, d.x, "d.xlx");//PASO prueba1
-	outBinaryV(p0.v, p0.x, "p0.xlx");//PASO prueba1
-	outBinaryM(Sout.m, Sout.x, Sout.y, "SRESULT.xlx");
+	if(DEBUG == 1){
+		outBinaryV(t.v, t.x, "Debug_Logs/primeMulti_F0_t.xlx");//PASO prueba1
+		outBinaryV(pc.v, pc.x, "Debug_Logs/primeMulti_F0_pc.xlx");//PASO prueba1
+		outBinaryV(d.v, d.x, "Debug_Logs/primeMulti_F0_d.xlx");//PASO prueba1
+		outBinaryV(p0.v, p0.x, "Debug_Logs/primeMulti_F0_p0.xlx");//PASO prueba1
+		outBinaryM(Sout.m, Sout.x, Sout.y, "Debug_Logs/primeMulti_F0_Sresult.xlx");
+		outBinaryV(ws.v, ws.x, "Debug_Logs/primeMulti_F0_ws.xlx");
+	}
 	freev(t);
 	freev(pc);
 	freev(d);
@@ -650,16 +635,9 @@ matrix postprocessS(matrix S, vector pc){
 	vector pcPrimes = zerov(pc.x);
 	int i, j;
 	noNegsS = biggerReplace(0, S);
-	outBinaryM(noNegsS.m, noNegsS.x, noNegsS.y, "SNoNegs.xlx");
 	//#pragma omp parallel for private(i, j) no paralleism can be done with such workflow
 	for(i = 0; i < numsPrimesReason.x; ++i){
 		matrix SnInterp;
-		char nameF[100];
-		char nameSnInterp[100];
-		char nameSout[100];
-		char nameSnInterpNoNeg[100];
-		printf("numsPrimes reason: %d\n", numsPrimesReason.v[i]);
-		//printf("i: %d\n", numsPrimesReason.v[i]);
 		int primeNum = numsPrimesReason.v[i];
 		for(j = 0; j < pcPrimes.x; ++j){
 			pcPrimes.v[j] = pc.v[j] * primeNum;
@@ -673,18 +651,24 @@ matrix postprocessS(matrix S, vector pc){
 		noNegsS = noNegsSTemp;
 
 		freem(noNegsSnInterp);
-		/*sprintf(nameF, "primesArray_%d.xlx", i);
-		sprintf(nameSnInterp, "SnInterpNew_%d.xlx", i);
-		sprintf(nameSout, "Sout_%d.xlx", i);
-		sprintf(nameSnInterpNoNeg, "SnInterpNoNeg_%d.xlx", i);
-		printf("\nArray pcPrimes:\n");
-		printv(pcPrimes);
-		outBinaryM(SnInterp.m, SnInterp.x, SnInterp.y, nameSnInterp);
-		outBinaryV(pcPrimes.v, pcPrimes.x, nameF);
-		outBinaryM(Sout.m, Sout.x, Sout.y, nameSout);*/
+		if(DEBUG == 1){
+			char nameF[100];
+			char nameSnInterp[100];
+			char nameSout[100];
+			char nameSnInterpNoNeg[100];
+			sprintf(nameF, "postprocessS_primesArray_%d.xlx", i);
+			sprintf(nameSnInterp, "postprocessS_SnInterpNew_%d.xlx", i);
+			sprintf(nameSout, "postprocessS_Sout_%d.xlx", i);
+			sprintf(nameSnInterpNoNeg, "postprocessS_SnInterpNoNeg_%d.xlx", i);
+			printf("\nArray pcPrimes:\n");
+			printv(pcPrimes);
+			outBinaryM(SnInterp.m, SnInterp.x, SnInterp.y, nameSnInterp);
+			outBinaryV(pcPrimes.v, pcPrimes.x, nameF);
+			outBinaryM(Sout.m, Sout.x, Sout.y, nameSout);
+			outBinaryM(noNegsS.m, noNegsS.x, noNegsS.y, "postprocessS_SNoNegs.xlx");
+		}
 	}//free memory!!
 	noNegsSout = biggerReplace(0, noNegsS);
-	//freem(Sout);
 	freem(noNegsS);
 	freeiv(numsPrimesReason);
 	freev(pcPrimes);
@@ -812,10 +796,20 @@ void executePrimeMultiF0(int argc, char* argv[]){
 		if (dt < .001) {
 			fprintf(stderr, "Timestep must be >= 0.001 (1 ms), set to %.3f.\n", DT);
 			dt = DT;
-			printf("PUSO DEFECTO dt: %f\n\n", dt);
 		}
-		printf("RECEIVED dt: %f\n\n", dt);
-		primeMulti_F0(wav, min, max, dt);
+		totalTime = initClocks(1);
+		startLocalClock(&totalTime);
+
+		matrix S = primeMulti_F0(wav, min, max, dt);
+		outBinaryM(S.m, S.x, S.y, out);
+
+		endLocalClock(&totalTime, 0, "Total time");
+		printf("\nDone in %f seconds\n", totalTime.values.v[0] );
+
+		printf("Procesing of file: ");
+		printf(out);
+		printf(" done.\n");
+
 }
 
 

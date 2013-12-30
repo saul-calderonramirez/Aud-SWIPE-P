@@ -610,7 +610,6 @@ vector readSoundFile(char ptrName[], double* ptrNyquist, double* ptrFs, double* 
 	vector x;
 	x.v = NULL;
 	x.x = 0;
-	printf("ENTRO: %s\n", ptrName);
 	//opening file time
 	if (strcmp(ptrName, "<STDIN>") == 0) { // i.e., is coming from STDIN
 	   wavf = stdin;
@@ -629,7 +628,7 @@ vector readSoundFile(char ptrName[], double* ptrNyquist, double* ptrFs, double* 
 		else{
 			*ptrNyquist = info.samplerate / 2.;
 			*ptrFs = info.samplerate;
-			printf("SAMPLE RATE: %f\n", *ptrFs);
+
 
 			int frames = (int)info.frames;
 			*ptrSoundLength = (double)((double)frames/ (double)info.samplerate);

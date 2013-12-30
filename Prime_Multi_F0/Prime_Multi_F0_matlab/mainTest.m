@@ -5,11 +5,7 @@ function mainTest
    %p0 = readFromFileAndPlot('../Prime_Multi_F0_v1/src/PrimeMultiF0/p0.xlx', 1);
    tStart = tic;
    S = primemultif0(x, fs, plim, dt);
-   time = toc;
-   tStart = tic;
-   pause(1);   
-   tElapsed = toc(tStart)
-   
+   tElapsed = toc(tStart);   
    disp('total execution time')
    tElapsed
    figure;
