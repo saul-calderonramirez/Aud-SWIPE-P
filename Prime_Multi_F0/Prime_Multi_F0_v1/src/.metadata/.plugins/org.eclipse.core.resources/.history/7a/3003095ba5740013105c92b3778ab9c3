@@ -161,10 +161,10 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 		if(DEBUG==1)printf("\nCalculating the specgram in parallel...\n");
 		//spectogram calculation is done in parallel, with a time window per thread
 		fftw_plan plan = fftw_plan_dft_r2c_1d(ws, window, fo, FFTW_ESTIMATE);
-		//omp_set_num_threads(numThreads);
-		//#pragma omp parallel for private(ind, col, window, copia, fo)
+		omp_set_num_threads(numThreads);
+		#pragma omp parallel for private(ind, col, window, copia, fo)
 		for(p = 0; p < n.x; p++){
-			//if(p == 0 /*&& DEBUG == 1*/)printf("Spectogram calculation Number threads: %d\n", omp_get_num_threads());
+			if(p == 0)printf("Number threads: %d", omp_get_num_threads());
 			vector sl = zerov(ws);//Specific loudness
 			//Compute specific loudness
 			//current window to compute
@@ -366,9 +366,9 @@ matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
 	if(DEBUG == 1)printf("\nCompute each candidate's pitch strength...\n");
 	// Thread parallelization 2, each thread calculates the score of a pitch candidate
 
-	//#pragma omp parallel for private (NL, f2, n, val, i, a, c)
+	#pragma omp parallel for private (NL, f2, n, val, i, a, c)
 	for(q = 0; q < pc2.x; q++){
-		//if(q == 0 /*&& DEBUG == 1*/)printf("Score pitch candidate Number threads: %d\n", omp_get_num_threads());
+		if(q == 0)printf("Number threads: %d", omp_get_num_threads());
 		NL = zerom(L.x, L.y-(int)k.v[q]);
 		f2 = zerov(L.y-(int)k.v[q]);
 		n = zerov(N.x);
@@ -637,7 +637,7 @@ matrix postprocessS(matrix S, vector pc){
 	vector pcPrimes = zerov(pc.x);
 	int i, j;
 	noNegsS = biggerReplace(0, S);
-
+	//#pragma omp parallel for private(i, j) no paralleism can be done with such workflow
 	for(i = 0; i < numsPrimesReason.x; ++i){
 		matrix SnInterp;
 		int primeNum = numsPrimesReason.v[i];
@@ -807,7 +807,7 @@ void executePrimeMultiF0(int argc, char* argv[]){
 		outBinaryM(S.m, S.x, S.y, out);
 
 		endLocalClock(&totalTime, 0, "Total time");
-		printf("\nDone in %f seconds, with %d threads\n", totalTime.values.v[0],  (int)numThreads );
+		printf("\nDone in %f seconds, with %d threads\n", totalTime.values.v[0],  omp_get_num_threads() );
 
 		printf("Procesing of file: ");
 		printf(wav);

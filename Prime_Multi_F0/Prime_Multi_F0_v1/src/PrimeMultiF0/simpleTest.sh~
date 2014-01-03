@@ -1,1 +1,1 @@
-mpiexec aswipep -i trumpet.wav  -o trumpetSimpleTest.txt -r 150:300 -p 1  -z trumpetSimpleTestTime.csv -t 0.01
+mpiexec primeMultiF0 -i chorus-male-a#3.wav  -o trumpetSimpleTest.txt -r 150:3000 -p 16  -z trumpetSimpleTestTime.csv -t 0.01

@@ -33,7 +33,6 @@
 #define VNUM                         1.5 // Current version
 
 clocksArray totalTime;
-double numThreads;
 
 matrix trasposeMat(matrix X){
 	matrix N = zerom(X.y, X.x);
@@ -161,10 +160,10 @@ matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, doub
 		if(DEBUG==1)printf("\nCalculating the specgram in parallel...\n");
 		//spectogram calculation is done in parallel, with a time window per thread
 		fftw_plan plan = fftw_plan_dft_r2c_1d(ws, window, fo, FFTW_ESTIMATE);
-		//omp_set_num_threads(numThreads);
-		//#pragma omp parallel for private(ind, col, window, copia, fo)
+		omp_set_num_threads(64);
+		#pragma omp parallel for private(ind, col, window, copia, fo)
 		for(p = 0; p < n.x; p++){
-			//if(p == 0 /*&& DEBUG == 1*/)printf("Spectogram calculation Number threads: %d\n", omp_get_num_threads());
+			//printf("Num threads: %d", omp_get_num_threads());
 			vector sl = zerov(ws);//Specific loudness
 			//Compute specific loudness
 			//current window to compute
@@ -366,9 +365,8 @@ matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
 	if(DEBUG == 1)printf("\nCompute each candidate's pitch strength...\n");
 	// Thread parallelization 2, each thread calculates the score of a pitch candidate
 
-	//#pragma omp parallel for private (NL, f2, n, val, i, a, c)
+	#pragma omp parallel for private (NL, f2, n, val, i, a, c)
 	for(q = 0; q < pc2.x; q++){
-		//if(q == 0 /*&& DEBUG == 1*/)printf("Score pitch candidate Number threads: %d\n", omp_get_num_threads());
 		NL = zerom(L.x, L.y-(int)k.v[q]);
 		f2 = zerov(L.y-(int)k.v[q]);
 		n = zerov(N.x);
@@ -637,7 +635,7 @@ matrix postprocessS(matrix S, vector pc){
 	vector pcPrimes = zerov(pc.x);
 	int i, j;
 	noNegsS = biggerReplace(0, S);
-
+	//#pragma omp parallel for private(i, j) no paralleism can be done with such workflow
 	for(i = 0; i < numsPrimesReason.x; ++i){
 		matrix SnInterp;
 		int primeNum = numsPrimesReason.v[i];
@@ -707,12 +705,11 @@ void executePrimeMultiF0(int argc, char* argv[]){
 		-v\t\tDisplay version number, then quit\n\n";
 		double st = ST; // All set by #defines
 		double dt = DT;
-		//default value
-		numThreads = 8;
 		int vlo = TRUE;
 		int mel = FALSE;
 		double min = MIN;
 		double max = MAX;
+		double paralelism = 8;
 		int ch;
 		FILE* batch = NULL; // not going to be read that way,
 		char wav[FILENAME_MAX] = "<STDIN>";
@@ -730,7 +727,7 @@ void executePrimeMultiF0(int argc, char* argv[]){
 					batch = fopen(optarg, "rt");
 					break;
 				case 'p':
-					numThreads = atof(optarg);
+					paralelism = atof(optarg);
 					break;
 				case 'z':
 					strcpy(testFileName, optarg);
@@ -766,7 +763,7 @@ void executePrimeMultiF0(int argc, char* argv[]){
 
 					break;
 				case 'v':
-					fprintf(stderr, "This is Prime Multi F0', v. %0.1f.\n", VNUM);
+					fprintf(stderr, "This is Aud-SWIPE-P', v. %1.1f.\n", VNUM);
 
 					break;
 				case '?':
@@ -780,10 +777,10 @@ void executePrimeMultiF0(int argc, char* argv[]){
 			}
 		}
 		//Paralelism goes through 0 to 1, where 1 is the maximum paralelism level (1 window size per proccess)
-		/*if(numThreads > 1 || numThreads < 0){
+		if(paralelism > 1 || paralelism < 0){
 			fprintf(stderr, "%s", synops);
 
-		}*/
+		}
 		if (min < 1.) { // Santiny-check the args
 			fprintf(stderr, "Min pitch < 1 Hz, aborting.\n");
 
@@ -807,10 +804,10 @@ void executePrimeMultiF0(int argc, char* argv[]){
 		outBinaryM(S.m, S.x, S.y, out);
 
 		endLocalClock(&totalTime, 0, "Total time");
-		printf("\nDone in %f seconds, with %d threads\n", totalTime.values.v[0],  (int)numThreads );
+		printf("\nDone in %f seconds\n", totalTime.values.v[0] );
 
 		printf("Procesing of file: ");
-		printf(wav);
+		printf(out);
 		printf(" done.\n");
 
 }

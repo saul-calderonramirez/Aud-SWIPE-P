@@ -1,18 +1,18 @@
-target=aswipep
+target=primeMultiF0
 targetCUDA=erbKernel
-testTarget=aswipept
+testTarget=primeMultiF0t
 prefix=/usr/local
 CC=	mpicc
 NVCC= nvcc 
 
-all: aswipep
+all: primeMultiF0
 
-aswipepNoCUDA:PrimeMultiF0.c AuditiveSystem.c Clocks.c Matrix.c SPUtilities.c UnitTestsMPI.c MPIMatlabCommunicator.c main.c
+primeMultiF0NoCUDA:PrimeMultiF0.c AuditiveSystem.c Clocks.c Matrix.c SPUtilities.c UnitTestsMPI.c MPIMatlabCommunicator.c main.c
 	$(CC) $(CFLAGS) -o $(target) PrimeMultiF0.c AuditiveSystem.c Clocks.c Matrix.c SPUtilities.c UnitTestsMPI.c  MPIMatlabCommunicator.c main.c -lm -lc -lblas -llapack -lfftw3 -lsndfile -fopenmp -lrt
 	
 
 
-aswipept: PrimeMultiF0.c AuditiveSystem.c Clocks.c Matrix.c SPUtilities.c UnitTestsMPI.c   MPIMatlabCommunicator.c TestFactory.c
+primeMultiF0t: PrimeMultiF0.c AuditiveSystem.c Clocks.c Matrix.c SPUtilities.c UnitTestsMPI.c   MPIMatlabCommunicator.c TestFactory.c
 	$(CC) $(CFLAGS) -o $(testTarget) PrimeMultiF0.c AuditiveSystem.c Clocks.c Matrix.c SPUtilities.c UnitTestsMPI.c TestFactory.c MPIMatlabCommunicator.c -lm -lc -lblas -llapack -lfftw3 -lsndfile -fopenmp -lrt
 
 
@@ -20,18 +20,18 @@ aswipept: PrimeMultiF0.c AuditiveSystem.c Clocks.c Matrix.c SPUtilities.c UnitTe
 	
 
 
-installTests: aswipept
-	install aswipept $(prefix)/bin
+installTests: primeMultiF0t
+	install primeMultiF0t $(prefix)/bin
 
-install: aswipepNoCUDA
-	install aswipep $(prefix)/bin
+install: primeMultiF0NoCUDA
+	install primeMultiF0 $(prefix)/bin
 	
-installCUDA: aswipepCUDA
-	install aswipep $(prefix)/bin
+installCUDA: primeMultiF0CUDA
+	install primeMultiF0 $(prefix)/bin
 
 
-clean: aswipep
+clean: primeMultiF0
 	rm $(target)
 
-cleanTests: aswipept
+cleanTests: primeMultiF0t
 	rm $(testTarget)
