@@ -1,0 +1,37 @@
+target=primeMultiF0
+targetCUDA=erbKernel
+testTarget=primeMultiF0t
+prefix=/usr/local
+CC=	mpicc
+NVCC= nvcc 
+
+all: primeMultiF0
+
+primeMultiF0NoCUDA:PrimeMultiF0.c  Clocks.c Matrix.c SPUtilities.c   main.c
+	$(CC) $(CFLAGS) -o $(target) PrimeMultiF0.c  Clocks.c Matrix.c SPUtilities.c   main.c -lm -lc -lblas -llapack -lfftw3 -lsndfile -fopenmp -lrt
+	
+
+
+primeMultiF0t: PrimeMultiF0.c  Clocks.c Matrix.c SPUtilities.c   TestFactory.c
+	$(CC) $(CFLAGS) -o $(testTarget) PrimeMultiF0.c  Clocks.c Matrix.c SPUtilities.c  TestFactory.c  -lm -lc -lblas -llapack -lfftw3 -lsndfile -fopenmp -lrt
+
+
+
+	
+
+
+installTests: primeMultiF0t
+	install primeMultiF0t $(prefix)/bin
+
+install: primeMultiF0NoCUDA
+	install primeMultiF0 $(prefix)/bin
+	
+installCUDA: primeMultiF0CUDA
+	install primeMultiF0 $(prefix)/bin
+
+
+clean: primeMultiF0
+	rm $(target)
+
+cleanTests: primeMultiF0t
+	rm $(testTarget)

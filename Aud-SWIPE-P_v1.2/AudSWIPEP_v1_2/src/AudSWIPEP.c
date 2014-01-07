@@ -149,7 +149,7 @@ matrix pitchStrengthAllCandidates(vector f, matrix L, vector pc, vector j){
 	// Thread parallelization 3, each thread calculates the score of a pitch candidate
 	#pragma omp parallel for private (NL, f2, n, val, i, a, c)
 	for(q = 0; q < pc2.x; q++){
-
+		
 		NL = zerom(L.x, L.y-(int)k.v[q]);
 		f2 = zerov(L.y-(int)k.v[q]);
 		n = zerov(N.x);
@@ -689,6 +689,8 @@ void getWsScoreMat(int i, vector ws, vector pc, matrix X, vector fERBs, vector d
 *@return vector, pitch array
 */
 vector aud_swipe_p(char wav[], double min, double max, double st, double dt, char* argv[], double paralelism, char* testName)  {
+	omp_set_num_threads(25);
+	
 	int i, tamX, rango, maxvent, minvent;
 	double a, dlog2p, dlog2p_max, fs;
 	double dERBs = 0.1;

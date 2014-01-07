@@ -1,0 +1,166 @@
+/*
+ * Name: AudSWIPE-P
+ * Authors: Prof. Arturo Camacho
+ * 			Bsc. Saul Calderon
+ * 			Bsc. Gabriel Alvarado
+ * General Description: Parallel C implementation of the AudSWIPE algorithm, originally
+ * implemented in MATLAB
+ * Archive Description: Testing scripts generator
+ */
+
+#include <sys/types.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include "AudSWIPEP.h"
+#define MI 100
+#define MA 500
+//#define ST .0001
+#define DT .01
+#define PARALELISM 1
+#define ARGC 12 //plus /0
+
+
+#define TEST_DIR "../../Respaldos_Muestras/muestras/testDefinitivo/"
+
+static int
+one (struct dirent *unused)
+{
+  return 1;
+}
+
+/*
+ * Writes a shell command in a file, MPI tests
+ *
+ */
+void writeShCommand(FILE* shTest, char* route, char* archive, double paralelism, char* testFile, char* ptrResultsDir, char* FREQ_RANGE){
+	fprintf(shTest, "echo Processing archive: %s \n", archive);
+	fprintf(shTest, "mpiexec aswipep -i %s  -o %s/%s_Result.txt -r %s -p %f  -z %s\n", route, ptrResultsDir, archive, FREQ_RANGE, paralelism, testFile);
+}
+
+/*
+ * Writes a shell command in a file, No MPI tests
+ *
+ */
+void writeShCommandNonMPI(FILE* shTest, char* route, char* archive, char* ptrResultsDir, char* FREQ_RANGE, char* testFile ){
+	fprintf(shTest, "echo Processing archive: %s \n", archive);
+	if(testFile != NULL){
+		fprintf(shTest, "aswipep -i %s  -o %s/%s_Result.txt -r %s  -z %s\n", route, ptrResultsDir, archive, FREQ_RANGE, testFile);
+	}
+	else{
+		fprintf(shTest, "aswipep -i %s  -o %s/%s_Result.txt -r %s\n", route, ptrResultsDir, archive, FREQ_RANGE);
+	}
+}
+
+
+
+/*
+ * Runs tests in one main directory, looking for wav files
+ * @param mainDirectory, main directory name
+ * @param test, test file to store results
+ * @param ptrParalism, degree of paralelism.
+ * */
+void runTestInDirectory(char* mainDirectory, char* test, double paralelism, FILE* shTest, int mpi, char *ptrResults, char* ptrFreqRange){
+	int n_muest;
+
+	int j;
+
+	struct dirent ** muestras;
+	n_muest = scandir( mainDirectory, &muestras, (int(*)(const struct dirent*))one, alphasort);
+	for(j = 2; j < n_muest; ++j){
+		char m[100];
+		strcpy(m, mainDirectory);
+		strcat(m, muestras[j]->d_name);
+		if(mpi == 1){
+			writeShCommand(shTest, m, muestras[j]->d_name, paralelism, test, ptrResults, ptrFreqRange );
+		}
+		else{
+			writeShCommandNonMPI(shTest, m, muestras[j]->d_name, ptrResults, ptrFreqRange, test );
+		}
+	}
+}
+
+
+
+
+/*
+ * Runs paralelism tests
+ * */
+void runParalelismTests(){
+	FILE* shTest = fopen ("runParalelismTests.sh", "w");
+	char* ptrMainDir = TEST_DIR;
+	char* ptrResultsDir = "ResultsParalelism";
+	fprintf(shTest, "sudo make clean\n");
+	fprintf(shTest, "sudo make install\n");
+	runTestInSubdirectories(ptrMainDir, "test_P0.csv", 0, shTest, 1, ptrResultsDir, "50:2000");
+	runTestInSubdirectories(ptrMainDir,  "test_P50.csv", 0.5, shTest, 1, ptrResultsDir, "50:2000");
+	runTestInSubdirectories(ptrMainDir, "test_P100.csv", 1, shTest, 1, ptrResultsDir, "50:2000");
+	fclose(shTest);
+}
+
+
+
+/*
+ * Generates the scripts
+ * */
+void scriptInstrumentTest(FILE* shTest, char *ptrInstrument, int min, int max, int fs,  int mpi, int test, int numThreads){
+		char ptrMainDir[200] = "../../Respaldos_Muestras/muestras/testDefinitivo/";
+		char ptrResultsDir[200] = "Results";
+		char ptrTestCSV[200] = "Test_";
+		char *ptrPtrTest = NULL;
+		char ptrFreqRange[30] = "";
+		char ptrMin[10];
+		char ptrMax[10];
+		sprintf ( ptrMin, "%d", min );
+		sprintf ( ptrMax, "%d", max );
+		strcat(ptrFreqRange, ptrMin);
+		strcat(ptrFreqRange, ":");
+		strcat(ptrFreqRange, ptrMax);
+		strcat(ptrMainDir, ptrInstrument);
+		strcat(ptrMainDir, "/");
+		strcat(ptrResultsDir, ptrInstrument);
+		strcat(ptrTestCSV, ptrInstrument);
+		strcat(ptrTestCSV, ".csv");
+		fprintf(shTest, "mkdir %s\n", ptrResultsDir);
+
+
+
+		writeShCommand(shTest, m, ptrInstrument, numThreads, test, ptrResults, ptrFreqRange );
+
+
+}
+
+/*
+ * Generates the parallelism tests
+ * */
+void runInstrumentsTimeTestsParallel(){
+	FILE* shTest = fopen ("runInstrumentsTimeTestsParallel.sh", "w");
+	fprintf(shTest, "sudo make clean\n");
+	fprintf(shTest, "sudo make install\n");
+	fprintf(shTest, "mkdir TimeResults\n" );
+	int mpi = 1;
+	int timeFile = 1;
+	scriptInstrumentTest( shTest, "Basses", 30, 4000, 44100, mpi, timeFile);
+
+	printf("\ntest Script done\n");
+	fclose(shTest);
+}
+
+
+
+/*
+ * Main method
+ * @param -p, the degree of paralelism 0 or 1
+ * */
+/*
+int main(int argc, char* argv[]) {
+	runInstrumentsTimeTestsSequential();
+		exit(EXIT_SUCCESS);
+}*/
+
+
+
+

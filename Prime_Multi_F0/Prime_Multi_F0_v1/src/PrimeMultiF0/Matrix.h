@@ -121,7 +121,7 @@ intvector primes(int);
 vector spline(vector, vector);
 double splinv(vector, vector, vector, double, int);
 // polynomial fitting
-vector polyfit(vector, vector, int);
+//vector polyfit(vector, vector, int);
 double polyval(vector, double);
 /*
 *Writes the given vector in a file

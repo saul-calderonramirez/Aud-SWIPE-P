@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
-		<item value="348" key="DIALOG_WIDTH"/>
-		<item value="262" key="DIALOG_Y_ORIGIN"/>
-		<item value="807" key="DIALOG_X_ORIGIN"/>
-		<item value="561" key="DIALOG_HEIGHT"/>
+		<item value="350" key="DIALOG_WIDTH"/>
+		<item value="230" key="DIALOG_Y_ORIGIN"/>
+		<item value="85" key="DIALOG_X_ORIGIN"/>
+		<item value="592" key="DIALOG_HEIGHT"/>
 		<item value="1|Cantarell|11.0|0|GTK|1|" key="DIALOG_FONT_NAME"/>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
@@ -13,18 +13,20 @@
 		<item value="false" key="isRegEx"/>
 		<item value="false" key="incremental"/>
 		<item value="false" key="wholeword"/>
-		<item value="scoresAllCandidates" key="selection"/>
+		<item value="getWsScoreMat" key="selection"/>
 		<list key="findhistory">
-			<item value="scoresAllCandidates"/>
-			<item value="Tercer parte"/>
 			<item value="getWsScoreMat"/>
 			<item value="scoreOneCandidate"/>
-			<item value="scoresAll"/>
-			<item value="primeMulti"/>
-			<item value="scoreAll"/>
-			<item value="N.xlx"/>
+			<item value="Si"/>
+			<item value="numThreads"/>
+			<item value="pragma omp parallel "/>
+			<item value="#pragma omp"/>
+			<item value="writeShCommand"/>
+			<item value="runTestInDirectory"/>
 		</list>
 		<list key="replacehistory">
+			<item value="numThreads"/>
+			<item value="primeMultiF0"/>
 		</list>
 	</section>
 </section>

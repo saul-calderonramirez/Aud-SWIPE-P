@@ -633,6 +633,7 @@ double splinv(vector x, vector y, vector y2, double val, int hi) {
 }
 
 // polynomial fitting with CLAPACK: solves poly(A, m) * X = B
+/*
 vector polyfit(vector A, vector B, int order) {
     int i;
     int j;
@@ -660,7 +661,7 @@ vector polyfit(vector A, vector B, int order) {
     else {
         return(Bp);
     }
-}
+}*/
 
 // given a vector of coefficients and a value for x, evaluate the polynomial
 double polyval(vector coefs, double val) {

@@ -1,0 +1,822 @@
+/*
+ * Name: AudSWIPE-P
+ * Authors: Prof. Arturo Camacho
+ *                         Bsc. Saul Calderon
+ *                         Bsc. Gabriel Alvarado
+ * General Description: Parallel C implementation of the AudSWIPE algorithm, originally
+ * implemented in MATLAB
+ * Thanks to: Kyle Gorman and  Alexander Iakovlev
+ * Archive Description: Main function Aud-SWIPE-P,
+ */
+//POSSIBLE FLAW, parts of code that might fail
+#include "PrimeMultiF0.h"
+#define MI 100
+#define MA 500
+#define ST .0001
+
+
+#define LEADER        0
+
+#define NOK     0
+
+#define TRUE  1
+#define FALSE 0
+
+#define DERBS  .1
+#define POLYV  .0013028 //  1 / 12 / 64 = 1 / 768
+#define DLOG2P .0104167 // 1/96
+
+#define ST .0001  // Feel free to change these
+#define DT .01
+#define MIN 100.
+#define MAX  600.
+#define VNUM                         1.5 // Current version
+
+clocksArray totalTime;
+double numThreads;
+
+matrix trasposeMat(matrix X){
+        matrix N = zerom(X.y, X.x);
+        int col, fil;
+        for(fil = 0; fil < N.x; ++fil){
+                for(col = 0; col < N.y; ++col){
+                        N.m[fil][col] = X.m[col][fil];
+                }
+        }
+        return N;
+}
+
+/*
+ * Gets the pitch candidates associated to the current window size
+ * @param i, current window size in the window size array
+ * @param ws, window sizes array
+ * @param d, array of pitch candidates corresponding to the current window size ws ???
+ * @param ptrJ, value returned, indicates the position of the pitch candidates to work with on the Loudness matrix
+ * @param ptrK
+ * */
+void getPitchCandidatesOfWs(int i, vector ws, vector d, vector* ptrJ, vector* ptrK){
+        int cont, ind;
+                //Determine pitch candidates that use this window size i
+        if(ws.x == 1){
+                resizev(ptrK, 0);
+                for(ind = 0; ind < ptrJ->x; ind++){
+                        ptrJ->v[ind] = ind + 1;
+                }
+        }else{
+                if(i == ws.x-1){
+                        cont = 0;
+                        for(ind = 0; ind < d.x; ind++){
+                                if(d.v[ind] - (double)(i + 1.) > -1){
+                                        ptrJ->v[cont] = ind;
+                                        cont++;
+                                }
+                        }
+                        resizev(ptrJ, cont);
+                        cont = 0;
+                        for(ind = 0; ind < ptrJ->x; ind++){
+                                if(d.v[(int)ptrJ->v[ind]] - (double)(i + 1.) < 0){
+                                        ptrK->v[cont] = ind;
+                                        cont++;
+                                }
+                        }
+                        resizev(ptrK, cont);
+                }else{
+                        if(i == 0){
+                                cont = 0;
+                                for(ind = 0; ind < d.x; ind++){
+                                        if(d.v[ind] - (double)(i+1) < 1.){
+                                                ptrJ->v[cont] = ind;
+                                                cont++;
+                                        }
+                                }
+                                resizev(ptrJ, cont);
+                                cont = 0;
+                                for(ind = 0; ind < ptrJ->x; ind++){
+                                        if(d.v[(int)ptrJ->v[ind]] - (double)(i+1.) > 0.){
+                                                ptrK->v[cont] = ind;
+                                                cont++;
+                                        }
+                                }
+                                resizev(ptrK, cont);
+                        }else{
+                                cont = 0;
+                                for(ind = 0; ind < d.x; ind++){
+                                        if(abs(d.v[ind] - (double)(i+1)) < 1.){
+                                                ptrJ->v[cont] = ind;
+                                                cont++;
+                                        }
+                                }
+                                resizev(ptrJ, cont);
+                                cont = 0;
+                                for(ind = 0; ind < ptrJ->x; ind++){
+                                        ptrK->v[ind] = ind;
+                                }
+                                resizev(ptrK, ptrJ->x);
+                        }
+                }
+        }
+
+}
+
+
+
+/*
+ * Calculates the spectogram of the zero padded signal in parallel, with one thread per window
+ * @param zpSignal, zero padded signal
+ * @param ws, window size, also defines the number of samples of the FFT
+ * @param w, window, could be a hanning window
+ * @param woverlap, window overlap
+ * @param f, frequencies represented in each FFT contained at the Score matrix
+ * @param L, in each column a real part of the FFT, N columns as N FFTs, as for N time windows
+ * Arrays  n and fi
+ * */
+matrix specgram(vector zpSignal, int ws, double fs, vector w, int woverlap, double dn, vector f, vector ti){
+			int p, ind, col, copia, a;
+			vector  fi, n;
+			matrix L, nL;
+			//delta in the frequency domain
+			double df = fs / ws;
+			//frequencies to be computed in the FFT
+			//it goes all the way to the sampling frequency, i.e 10 KHZ
+			fi = zerov(ws);
+			for(ind = 0; ind < fi.x; ind++){
+					fi.v[ind] = (double)ind * df;
+			}
+			for(ind = 0; ind < f.x; ind++){
+					f.v[ind] = fi.v[ind];
+			}
+			double* window = 0;
+			//Centers of the time windows
+			n = zerov(ceil((zpSignal.x - ws + 1.) * (1. / dn)));//Centers of the windows
+			for(ind = 0, a = 0; ind < n.x; a = a + dn, ind++){
+					n.v[ind] = a;
+			}
+			//Loudness matrix
+			//in each column a real part of the FFT, N columns as N FFTs, as N windows
+			L = zerom(ws, n.x);
+			//matrix with half the maximum frequency, as returned in MATLAB
+			nL = zerom(round(0.5 * ws) + 1, n.x);
+			//Complex number array
+			fftw_complex* fo = 0;
+			if(DEBUG==1)printf("\nCalculating the specgram in parallel...\n");
+			//spectogram calculation is done in parallel, with a time window per thread
+			fftw_plan plan = fftw_plan_dft_r2c_1d(ws, window, fo, FFTW_ESTIMATE);
+			//omp_set_num_threads(numThreads);
+			#pragma omp parallel for private(ind, col, window, copia, fo)
+			for(p = 0; p < n.x; p++){
+					//if(p == 0 /*&& DEBUG == 1*/)printf("Spectogram calculation Number threads: %d\n", omp_get_num_threads());
+					vector sl = zerov(ws);//Specific loudness
+					//Compute specific loudness
+					//current window to compute
+					window = fftw_malloc(sizeof(double) * ws);
+					fo = fftw_malloc(sizeof(fftw_complex) * ws);
+					ind = 0;
+					//applies the window to the signal, i.e Hann window
+					for(col = n.v[p]; col < n.v[p] + ws; col++, ind++){
+							window[ind] = (w.v[ind] * zpSignal.v[col]);
+					}
+					//Calculates the fft of the window calculated previously
+					////Magnitudes
+					fftw_execute_dft_r2c(plan, window, fo);
+					copia = ws - 1;
+					for(ind = 1; ind < ws / 2; ind++, copia--){//fft Calculates only the first n/2 + 1, because of nyquist
+							fo[copia][0] = fo[ind][0];
+							fo[copia][1] = fo[ind][1];
+					}
+					//Specific Loudness computation
+					//i.e complex to real number conversion
+					for(ind = 0; ind < ws; ind++){
+							//The first root is because of the modulus, the other one because of the loudness operator
+							L.m[ind][p] = sqrt(sqrt((fo[ind][0]*fo[ind][0]) + (fo[ind][1]*fo[ind][1])));
+							fo[ind][0] = 0;
+							fo[ind][1] = 0;
+					}
+					fftw_free(window);
+					fftw_free(fo);
+			}
+			fftw_destroy_plan(plan);
+			//n must be converted to time scale, using the sampling frequency fs
+			//ti = zerov(n.x);
+			for(ind = 0; ind < n.x; ++ind){
+					ti.v[ind] = n.v[ind] / fs;
+			}
+			//Copies only values of interest
+			for(p = 0; p < n.x; ++p){
+					for(ind = 0; ind < nL.x; ind++){
+							nL.m[ind][p] = L.m[ind][p];
+					}
+			}
+			//Debugging
+			if(DEBUG == 1){
+					outBinaryV(ti.v, ti.x, "specgram_ti.xlx");
+					outBinaryM(nL.m, nL.x, nL.y, "specgram_L.xlx");
+			}
+			//f and L frequency range must be from zero to fs/2, with size ws/2 +1
+			return nL;
+}
+
+/*
+*Returns the pitch strength of one pitch candidate, applying the kernel to the matrix of signals
+*This is the kernel of Aud SWIPE'
+*@param f, in lineal scale
+*@param NL, the normalized loudness matrix of signals
+*@param pc, the pitch candidate
+*@return vector, computed pitch strenghts
+*/
+vector scoreOneCandidate( vector f, matrix NL, double pc ){
+        int n,i,j;
+        if(DEBUG == 1)printf("Init score one candidate: %f\n", pc);
+        vector S = zerov(NL.x);
+        double p = f.v[f.x-1]/pc -0.75;//Number of harmonics
+        vector q = copyv(f);
+        if(p >= 0){
+                n = floor(p);
+        }else{
+                n = ceil(p);
+        }
+        if(n == 0){
+                return S;
+        }
+        vector k = zerov(f.x);//Kernel
+        for(i = 0; i < q.x; i++){
+                q.v[i] = q.v[i]/pc;//Normalize frequency w.r.t. candidate
+        }
+        intvector primos = primes(n);//This is A-SWIPE'
+        vector prim = zerov(primos.x+1);
+        for(i = primos.x-1;i >= 0; i--){
+                prim.v[i+1] = primos.v[i];
+        }
+        prim.v[i+1] = 1;
+        //In the matlab cycle it begins from 1 passing through every prime number
+        double val;
+        if(DEBUG == 1)printf("Normalized frequency\n");
+        for(i = 0; i < prim.x; i++){///PARALELIZAR AQUI **
+                for(j = 0; j < q.x; j++){
+                        val = fabs(q.v[j] - prim.v[i]);
+                        if(val < 0.25){//Peaks weights
+                                k.v[j] = cos(2*M_PI*q.v[j]);
+                        }else{//cambio antes, val > 0.25
+                                if(val > 0.25 && val < 0.75){//Valleys weights
+                                        k.v[j] = k.v[j] + cos(2 * M_PI * q.v[j]) / 2;
+                                }
+                        }
+                }
+        }
+        if(DEBUG == 1)printf("Kernel is built\n");
+        //Envelope is not necessary in prime multi F0
+        double norm = 0;
+        for(i = 0; i < k.x; i++){
+                if(k.v[i] > 0)
+                        norm += k.v[i]*k.v[i];
+        }
+        norm = sqrt(norm);
+        //printf("PC: %f, normK: %f\n", pc, norm);
+        //K+- normalize kernel
+
+        if(DEBUG == 1)printf("Applying kernel\n");
+        for(i = 0; i < k.x; i++){
+                k.v[i] = k.v[i]/norm;
+        }
+        //Compute pitch strength, applying the kernel
+        for(i = 0; i < NL.x; i++){
+                for(j = 0; j < k.x; j++){
+                S.v[i] += NL.m[i][j] * k.v[j];
+                }
+        }
+        if(DEBUG == 1)printf("Score one candidate finished\n");
+        if(DEBUG == 1){
+                //DEBUGGING
+                char nameF[50];
+                char nameNL[50];
+                char nameS[50];
+                char namePrims[50];
+                char nameK[50];
+                sprintf(nameF, "Debug_Logs/scoreOneCandidate_fSOC_%f.xlx", pc);
+                sprintf(nameNL, "Debug_Logs/scoreOneCandidate_NLSOC_%f.xlx", pc);
+                sprintf(nameS, "Debug_Logs/scoreOneCandidate_SSOC_%f.xlx", pc);
+                sprintf(namePrims, "Debug_Logs/scoreOneCandidate_PrimesSOC_%f.xlx", pc);
+                sprintf(nameK, "Debug_Logs/scoreOneCandidate_KSOC_%f.xlx", pc);
+                outBinaryV(f.v, f.x, nameF);
+                outBinaryM(NL.m, NL.x, NL.y, nameNL);
+                outBinaryV(S.v, S.x, nameS);
+                //Debug
+                outBinaryV(k.v, k.x, nameK);
+                outBinaryV(prim.v, prim.x, namePrims);
+        }
+
+        freeiv(primos);
+        freev(k);
+        freev(prim);
+        freev(q);
+        return S;
+}
+
+
+/*
+*Returns the pitch strength of several pitch candidate, applying the kernel to the matrix of signals
+*@param f, in lineal scale, the frequencies represented in every column of the spectogram or loudness matrix L
+*@param L, the loudness matrix of signals
+*@param pc, the pitch candidate
+*@param j, pitch candidates of the current window size, it starts in 1, must be taken into account
+*@return matrix, computed pitch strenghts per pitch candidate
+*/
+matrix scoresAllCandidates(vector f, matrix L, vector pc, vector j){
+        //Create pitch salience matrix
+        if(DEBUG == 1)printf("\nCreate pitch salience matrix...\n");
+        //pitch candidates per rows and time signal per columns
+        vector k, pc2;
+        matrix S, N;
+        S = zerom(j.x, L.x);
+        k = zerov(j.x);
+        int q, a, find, i, c;
+        int ant = 0;
+        //selects the pitch candidates corresponding to the current window size
+        //pc2 new array with the corresponding pitch candidates to the window size
+        pc2 = zerov(j.x);
+        for(q = 0; q < j.x; q++){
+                //CAMBIO!!! antes jalaba basura porque j inicia desde 1
+                pc2.v[q] = pc.v[(int)j.v[q] ];
+        }
+        for(q = 0; q < k.x; q++){//Find
+                for(a = ant; f.x; a++){
+                        if(f.v[a] > pc2.v[q]/4.){
+                                find = a;
+                                break;
+                        }
+                }
+                k.v[q] = find;
+                ant = k.v[q];
+        }
+        //Loudness normalization factor
+        if(DEBUG == 1)printf("\nLoudness normalization factor...\n");
+        //Hasta aqui va igual,se necesita transponer la matrix L
+        N = zerom(L.x, L.y);
+        int fil,col;
+        double suma = 0;
+        for(fil = 0; fil<N.x; fil++, suma = 0){
+                for(col = N.y-1; col >=0 ; col--){
+                        suma += L.m[fil][col];
+                        N.m[fil][col] = suma;
+                }
+        }
+
+
+
+        if(DEBUG == 1)printf("\nNormalize Loudness...\n");
+        if(DEBUG == 1)printf("\nCompute each candidate's pitch strength...\n");
+        // Thread parallelization 2, each thread calculates the score of a pitch candidate
+
+    //    #pragma omp parallel for //private (/*NL, f2, n, val,i, a, c)
+        for(q = 0; q < pc2.x; q++){
+        		int a, i, c;
+        		matrix NL;
+        		double val;
+        		 vector f2, n;
+                if(q == 0 && DEBUG == 1)printf("Score pitch candidate Number threads: %d\n", omp_get_num_threads());
+                NL = zerom(L.x, L.y-(int)k.v[q]);
+                f2 = zerov(L.y-(int)k.v[q]);
+                n = zerov(N.x);
+                //Normalize Loudness
+                if(DEBUG == 1)printf("Normalize Loudness \n");
+                for(i = 0; i < n.x; i++){
+                        val = N.m[i][(int)k.v[q]];
+                        if(val != 0){
+                                n.v[i] = val;
+                        }else{
+                                n.v[i] = 88888;
+                        }
+                }
+                if(DEBUG == 1)printf("Normalize Loudness second part\n");
+                for(i = 0; i < NL.x; i++){
+                        for(a = 0,c = (int)k.v[q]; a < NL.y; a++, c++){
+                                NL.m[i][a] = L.m[i][c] / n.v[i];
+                                f2.v[a] = f.v[c];
+                        }
+                }
+                //Compute pitch strength
+                //printf("Antes de score one candidate pc2: %f\n", pc2.v[q]);
+               // vector Si = scoreOneCandidate( f2, NL, pc2.v[q] );
+                vector Si = zerov(NL.x);
+                //for(i = 0; i < Si.x; i++){
+                 //       S.m[q][i] = Si.v[i];
+                //}
+                freev(Si);
+                freev(f2);
+                freev(n);
+                freem(NL);
+        }
+        if(DEBUG == 1){
+                outBinaryV(pc2.v, pc2.x, "Debug_Logs/scoresAllCandidates_pc2.xlx");
+                outBinaryV(j.v, j.x, "Debug_Logs/scoresAllCandidates_j2.xlx");
+                outBinaryM(N.m, N.x, N.y, "Debug_Logs/scoresAllCandidates_Ntrans.xlx");
+                outBinaryM(L.m, L.x, L.y, "Debug_Logs/scoresAllCandidates_L.xlx");
+        }
+        freev(k);
+        freev(pc2);
+        freem(N);
+        return S;
+}
+
+/*
+ * Calculates the score matrix for the received window size i
+ * @param x, signal on the time domain to process
+ * @param ws, current window size to work with
+ * @param pc, pitch candidates array
+ * @param d, array of pitch candidates corresponding to the current window size ws ???
+ * @param fs, sampling frequency of the received signal x
+ * @param p0, optimal window sizes for every pitch candidate
+ * @param t, time array corresponding to the signal x to process
+ * */
+void getWsScoreMat(int i, vector x, vector ws, vector pc, vector d, matrix S, double fs, vector p0, vector t){
+        //woverlap es DIFERENTE
+        double dn, minPc, woverlap = 0.5;
+        matrix L, L2, Si, Si2, Si2trans, L2trans;
+        vector w, mu, xz, f, f2;
+        vector j = zerov(pc.x);
+        vector k = zerov(pc.x);
+        int ind, p;
+        //dn es DIFERENTE
+        //Hop size
+        //p0, window sizes used by the pitch candidate
+        dn = maxim(1, round(4  * fs / p0.v[i] ));//PASO prueba1
+        //calculates the hanning window to use
+        w = zerov(ws.v[i]);// PASO prueba 1
+        Hanning(w.v,w.x);
+        //calculates the window overlap DIFERENTE
+        woverlap = maxim(0, round(ws.v[i] - dn));//PASO prueba1
+        if(DEBUG == 1)printf("\n        Zero pad signal...\n");
+        //according to the window size, different pitch candidates will be processed
+        getPitchCandidatesOfWs(i, ws, d, &j, &k);//j PASO prueba 1
+        // Zero padded signal, an array with the original signal copied in an array with a multiple of window size number of samples
+        xz = zerov(x.x + round(ws.v[i] / 2) + round(dn + ws.v[i] / 2));
+        int fil, col, col2;
+        col2 = 0;
+        for(col = (ws.v[i] / 2); col < x.x + (ws.v[i] / 2); col++, col2++){
+                xz.v[col] = x.v[col2];
+        }//xz PASO prueba 1
+        //we create the frequencies array
+        f = zerov((ws.v[i]/2) + 1);
+        //calculates the spectogram of the signal, that is a fourier transform for every desired time interval (a fourier transform is a column or as set of rows,
+        //and a time intervals go along the columns)
+        //Important initialization before specgram
+        vector ti = zerov(ceil((xz.x - ws.v[i] + 1.) * (1. / dn)));
+        //spectogram calculation
+        L = specgram(xz, ws.v[i], fs, w, woverlap, dn, f, ti);
+        //Computes scores
+        //Compute loudness at required frequency range:
+        minPc = pc.v[0] / 4;
+        int pos = -1;
+        for(col = 0; col < f.x && pos == -1; ++col){
+                if(f.v[col] > minPc){
+                        pos = col;
+                }
+        }
+        f2 = zerov(f.x - pos);
+        int indF2 = 0;
+        for(fil = pos; fil < f.x; ++fil){
+                f2.v[indF2++] = f.v[fil];
+        }
+        L2 = zerom(f2.x, L.y);
+        indF2 = pos;
+        for(fil = 0; fil < L2.x; ++fil){
+                for(col = 0; col < L2.y; ++col){
+                        L2.m[fil][col] = L.m[indF2][col];
+                }
+                indF2++;
+        }
+        L2trans = trasposeMat(L2);
+        //scoresAllCandidates works with a trasposed matrix L2!
+        Si = scoresAllCandidates(f2, L2trans, pc, j);
+     /*   matrix SiTrans = trasposeMat(Si);
+        Si2 = interp1Mat(ti, t, SiTrans, 0);
+        if(DEBUG==1)printf("\n        Matrix interpolated\n");
+        Si2trans = trasposeMat(Si2);
+        //Compute contribution of this window size to pitch strength
+        if(DEBUG==1)printf("\n        Compute contribution of this window size to pitch strength...\n");
+        mu = onesv(j.x);
+        for(ind = 0; ind < k.x; ind++){
+                //j starts in 1 and not in 0, POSIBLE FLAW
+                mu.v[(int)k.v[ind]] = 1 - fabs(d.v[(int)j.v[(int)k.v[ind]]]-(i+1));
+        }
+        if(DEBUG == 1)printf("\nMu construction finished...\n");
+        for(ind = 0; ind < j.x; ind++){
+                for(p = 0; p < S.y; p++){
+                  //matlab to c indexing, generated a problem previously, j starts in 1 and not in 0, POSIBLE FLAW
+                  int x = (int)j.v[ind];// - 1;
+                  S.m[x][p] += mu.v[ind] * Si2trans.m[ind][p];
+                }
+        }
+        if(DEBUG == 1){
+                outBinaryM(S.m, S.x, S.y, "Debug_Logs/getWsScoreMat_S.xlx");
+                outBinaryM(Si2.m, Si2.x, Si2.y, "Debug_Logs/getWsScoreMat_Si2.xlx");
+                outBinaryM(Si.m, Si.x, Si.y, "Debug_Logs/getWsScoreMat_Si.xlx");
+                outBinaryV(ti.v, ti.x, "Debug_Logs/getWsScoreMat_ti.xlx");
+                outBinaryV(t.v, t.x, "Debug_Logs/getWsScoreMat_t.xlx");
+                outBinaryV(mu.v, mu.x, "Debug_Logs/getWsScoreMat_mu.xlx");
+                outBinaryM(L2trans.m, L2trans.x, L2trans.y, "Debug_Logs/getWsScoreMat_L2trans.xlx");
+                //Testing
+                outBinaryV(j.v, j.x, "Debug_Logs/getWsScoreMat_j.xlx");
+                outBinaryV(k.v, k.x, "Debug_Logs/getWsScoreMat_k.xlx");
+                outBinaryV(d.v, d.x, "Debug_Logs/getWsScoreMat_d.xlx");
+                outBinaryV(w.v, w.x, "Debug_Logs/getWsScoreMat_w.xlx");
+                outBinaryV(xz.v, xz.x, "Debug_Logs/getWsScoreMat_xz.xlx");
+        }*/
+
+        //Gets the pitch candidates associated to the current window size
+        freem(L);
+        freem(L2);
+        freem(Si);
+        freem(Si2);
+        freem(Si2trans);
+        freem(L2trans);
+        freev(w);
+        freev(mu);
+        freev(xz);
+        freev(f);
+        freev(f2);
+}
+
+
+
+/*
+ * Main function which executes the prime multi F0 algorithm
+ * @param wav, name of the sound file to process
+ * @param min, minimum pitch candidate to evaluate
+ * @param max, maximum pitch candidate to evaluate
+ * @param dt, time delta interval of pitch estimation
+ * @return S, score matrix for pitch candidate, whereas for each dt, every pitch candidate will have a score, the highest is the more prominent
+ * candidate, the second one the second likely note in the same interval and so on
+ */
+matrix primeMulti_F0(char wav[], double min, double max, double dt){
+        if(DEBUG == 1)printf("Prime multi F0 started\n");
+        vector t, ws, logWs, p0, log2pc, pc, d, x;
+        matrix S, Sout;
+        double a, dlog2p, dlog2p_max, nyquist, nyquist2, fs;
+        int i, tamX, range, maxvent, minvent, frames;
+        //x contains the sound signal, reads the signal from file, fs the sampling frequency and frames are the total number of samples
+        x = readSoundFile(wav, &nyquist, &fs, &soundLength, &frames);
+        //Defines the time  array
+        double lt = ceil(((double)frames / (double)fs) / dt);
+        t = zerov(lt);
+        a = 0;
+        //The time array t is filled
+        for(i = 0; i < t.x; i++, a = a + dt){
+                t.v[i] = a;
+        }
+        //Defines the  pitch candidates array pc
+        //Default value
+        dlog2p = 1./48.;
+        //the pitch candidates array will have a logarithmic sucession
+        range = ceil((log2(max)-log2(min))*(1./dlog2p));
+        log2pc = zerov(range);
+        pc = zerov(range);
+        dlog2p_max = log2(max);
+        i = 0;
+        //final pitch candidates array pc
+        for(a = log2(min); a <= dlog2p_max; a = a+dlog2p, i++){
+                log2pc.v[i] = a;
+                pc.v[i] = pow(2, log2pc.v[i]);
+        }
+        //Prime multi F0 works with different window sizes in order to find the best fit of the signal spectrum with SWIPE's kernel, only power of two
+        // window sizes are chosen, hence we determine power-of-two window sizes
+        if(DEBUG==1)printf("\n        Determine power-of-two window sizes...\n");
+        //Esto esta DIFERENTE, en lugar de max en la segunda linea es min
+        maxvent = round(log2(8 * fs / min));
+        //DIFERENTE, antes era max
+        minvent = round(log2(8 * fs / max));
+        logWs = zerov(2);
+        logWs.v[0] = maxvent;
+        logWs.v[1] = minvent;
+
+        //power-of-two window sizes
+        ws = zerov(maxvent - minvent + 1);
+        if(DEBUG == 1)printf("Number of WINDOW SIZES: %d\n", ws.x);
+        for(a = maxvent,i = 0; a >= minvent; a--, i++) ws.v[i] = pow(2, a);
+        //S matrix is the Score table for each pitch candidate, each row corresonds to a pitch candidate, and each column, to a different time interval
+        //Pitch Strength matrix, with the Partial score of a set of window sizes
+        S = zerom(pc.x, t.x);
+        //p0 contains the optimal pitch candidate for every window size
+        p0 = zerov(ws.x);
+        for(i = 0; i < p0.x; i++) p0.v[i] = 8 *  fs / ws.v[i];
+        //Determine window sizes used by each pitch candidate
+        if(DEBUG==1)printf("\n        Determine window sizes used by each pitch candidate...\n");
+        d = zerov(log2pc.x);
+        for(i = 0; i < d.x; i++) d.v[i] = 1 + log2pc.v[i] - log2(8. * fs / ws.v[0]);
+
+        //Calculates a score for every window size
+        for(i = 0; i < ws.x; ++i){
+                if(DEBUG == 1)printf("---------------------Current Window size: %f---------------------\n", ws.v[0]);
+                getWsScoreMat(i, x, ws, pc, d, S, fs, p0, t);
+        }
+        if(DEBUG==1)printf("\nScores calculated for every window size\n");
+        //interpolates prime pitch candidates
+        /*Sout = postprocessS(S, pc);
+        //Testing
+        if(DEBUG == 1){
+                outBinaryV(t.v, t.x, "Debug_Logs/primeMulti_F0_t.xlx");//PASO prueba1
+                outBinaryV(pc.v, pc.x, "Debug_Logs/primeMulti_F0_pc.xlx");//PASO prueba1
+                outBinaryV(d.v, d.x, "Debug_Logs/primeMulti_F0_d.xlx");//PASO prueba1
+                outBinaryV(p0.v, p0.x, "Debug_Logs/primeMulti_F0_p0.xlx");//PASO prueba1
+                outBinaryM(Sout.m, Sout.x, Sout.y, "Debug_Logs/primeMulti_F0_Sresult.xlx");
+                outBinaryV(ws.v, ws.x, "Debug_Logs/primeMulti_F0_ws.xlx");
+        }*/
+        freev(t);
+        freev(pc);
+        freev(d);
+        freev(p0);
+        freev(log2pc);
+        freev(logWs);
+        freev(ws);
+        return Sout;
+}
+
+
+
+/*
+ * Receives the score matrix S and applies post processing required by prime multi F0 algorithm
+ * @param S, score matrix, rows are pitch candidates, columns are the values in time
+ */
+matrix postprocessS(matrix S, vector pc){
+        int numPrimes = (int)(pc.v[pc.x - 1] / pc.v[0]);
+        intvector numsPrimesReason = primes(numPrimes);
+        matrix Sout, noNegsS, noNegsSout;
+        vector pcPrimes = zerov(pc.x);
+        int i, j;
+        noNegsS = biggerReplace(0, S);
+
+        for(i = 0; i < numsPrimesReason.x; ++i){
+                matrix SnInterp;
+                int primeNum = numsPrimesReason.v[i];
+                for(j = 0; j < pcPrimes.x; ++j){
+                        pcPrimes.v[j] = pc.v[j] * primeNum;
+                }
+
+                SnInterp = interp1Mat(pc, pcPrimes, noNegsS, 0);
+                matrix noNegsSnInterp = biggerReplace(0, SnInterp);
+                matrix noNegsSTemp = substract(noNegsS, noNegsSnInterp);
+                freem(noNegsS);
+                //to avoid memory leaks
+                noNegsS = noNegsSTemp;
+
+                freem(noNegsSnInterp);
+                if(DEBUG == 1){
+                        char nameF[100];
+                        char nameSnInterp[100];
+                        char nameSout[100];
+                        char nameSnInterpNoNeg[100];
+                        sprintf(nameF, "postprocessS_primesArray_%d.xlx", i);
+                        sprintf(nameSnInterp, "postprocessS_SnInterpNew_%d.xlx", i);
+                        sprintf(nameSout, "postprocessS_Sout_%d.xlx", i);
+                        sprintf(nameSnInterpNoNeg, "postprocessS_SnInterpNoNeg_%d.xlx", i);
+                        printf("\nArray pcPrimes:\n");
+                        printv(pcPrimes);
+                        outBinaryM(SnInterp.m, SnInterp.x, SnInterp.y, nameSnInterp);
+                        outBinaryV(pcPrimes.v, pcPrimes.x, nameF);
+                        outBinaryM(Sout.m, Sout.x, Sout.y, nameSout);
+                        outBinaryM(noNegsS.m, noNegsS.x, noNegsS.y, "postprocessS_SNoNegs.xlx");
+                }
+        }//free memory!!
+        noNegsSout = biggerReplace(0, noNegsS);
+        freem(noNegsS);
+        freeiv(numsPrimesReason);
+        freev(pcPrimes);
+        return noNegsSout;
+}
+
+/*
+ * Executes the PrimeMultiF0 Algorithm
+ *@param argc, number of arguments
+ *@param argv, list of arguments
+ * */
+void executePrimeMultiF0(int argc, char* argv[]){
+                char output[] = "OUTPUT:\npitch_0\ttime_0\npitch_1\ttime_1\n...\t...\
+                \npitch_N\ttime_N\n\n";
+                char header[] = "Prime multi F0 multiple notes pitch estimator \
+                <kgorman@ling.upenn.edu>.\nBased on: Camacho, Arturo (2013). \
+                \
+                \n\n\
+                \tmore information: <http://ling.upenn.edu/~kgorman/c/swipe/>\n\n";
+                char synops[] = "SYNPOSIS:\n\n\
+                swipe [-i INPUT] [-b LIST] [-o OUTPUT] [-r MIN:MAX] [-s ST] [-t DT] [-mnhv]\n\n\
+                FLAG:\t\tDESCRIPTION:\t\t\t\t\tDEFAULT:\n\n\
+                -i FILE\t\tinput file\t\t\t\t\tSTDIN\n\
+                -p PARALELISM\tParalelism level from 0 to 1, where 1 is the maximum level\t\tinput file\t\t\t\t\tSTDIN\n\
+                -o FILE\t\toutput file\t\t\t\t\tSTDOUT\n\
+                -b LIST\t\tbatch mode: [LIST is a file containing\n\
+                \t\tone \"INPUT OUTPUT\" pair per line]\n\n\
+                -r MIN:MAX\tpitch range in Hertz\t\t\t\t100:600\n\
+                -s THRSHLD\tstrength threshold  [0 <= x <= 1]\t\t0.300\n\
+                -t SECONDS\ttimestep in seconds [must be < SF / 2]\t\t0.001\n\n\
+                -m\t\tOutput Mel pitch\t\t\t\tno\n\
+                -n\t\tDon't output voiceless frames\t\t\tno\n\
+                -h\t\tDisplay this message, then quit\n\
+                -v\t\tDisplay version number, then quit\n\n";
+                double st = ST; // All set by #defines
+                double dt = DT;
+                //default value
+                numThreads = 8;
+                int vlo = TRUE;
+                int mel = FALSE;
+                double min = MIN;
+                double max = MAX;
+                int ch;
+                FILE* batch = NULL; // not going to be read that way,
+                char wav[FILENAME_MAX] = "<STDIN>";
+                char out[FILENAME_MAX] = "<STDOUT>";
+                char* ptrTestFile = NULL;
+                char testFileName[FILENAME_MAX] = "test_file.csv";
+                char ptrOptArgTemp[FILENAME_MAX];
+              //  clocks = initClocks(11);
+               // cycleClocks = initClocks(9);
+                totalTime = initClocks(1);
+
+                while ((ch = getopt(argc, argv, "i:o:r:s:t:b:p:z:mnhv")) != -1) {
+                        switch(ch) {
+                                case 'b':
+                                        batch = fopen(optarg, "rt");
+                                        break;
+                                case 'p':
+                                        numThreads = atof(optarg);
+                                        break;
+                                case 'z':
+                                        strcpy(testFileName, optarg);
+                                        ptrTestFile = testFileName;
+                                        break;
+                                case 'i':
+                                        strcpy(wav, optarg);
+                                        break;
+                                case 'o':
+                                        strcpy(out, optarg);
+                                        break;
+                                case 'r':
+                                        strcpy(ptrOptArgTemp, optarg);
+                                        min = atof(strtok(ptrOptArgTemp, ":"));
+                                        max = atof(strtok(NULL, ":"));
+                                        break;
+                                case 's':
+                                        st = atof(optarg);
+                                        break;
+                                case 't':
+                                        dt = atof(optarg);
+                                        break;
+                                case 'm':
+                                        mel = TRUE;
+                                        break;
+                                case 'n':
+                                        vlo = FALSE;
+                                        break;
+                                case 'h':
+                                        fprintf(stderr, "%s", header);
+                                        fprintf(stderr, "%s", synops);
+                                        fprintf(stderr, "%s", output);
+
+                                        break;
+                                case 'v':
+                                        fprintf(stderr, "This is Prime Multi F0', v. %0.1f.\n", VNUM);
+
+                                        break;
+                                case '?':
+                                default:  // Would like to do clever things here, but no ideas yet
+                                                fprintf(stderr, "%s", header);
+                                                fprintf(stderr, "%s", synops);
+
+                                                argc -= optind;
+                                                argv += optind;
+                                                break;
+                        }
+                }
+                //Paralelism goes through 0 to 1, where 1 is the maximum paralelism level (1 window size per proccess)
+                /*if(numThreads > 1 || numThreads < 0){
+                        fprintf(stderr, "%s", synops);
+
+                }*/
+                if (min < 1.) { // Santiny-check the args
+                        fprintf(stderr, "Min pitch < 1 Hz, aborting.\n");
+
+                }
+                if (max - min < 1.) {
+                        fprintf(stderr, "Max pitch <= min pitch, aborting.\n");
+
+                }
+                if (st < 0. || st > 1.) {
+                        fprintf(stderr, "Strength must be 0 <= x <= 1, set to %.3f.\n", ST);
+                        st = -DBL_MAX;
+                }
+                if (dt < .001) {
+                        fprintf(stderr, "Timestep must be >= 0.001 (1 ms), set to %.3f.\n", DT);
+                        dt = DT;
+                }
+                totalTime = initClocks(1);
+                startLocalClock(&totalTime);
+
+                matrix S = primeMulti_F0(wav, min, max, dt);
+                //outBinaryM(S.m, S.x, S.y, out);
+
+                endLocalClock(&totalTime, 0, "Total time");
+                printf("\nDone in %f seconds, with %d threads\n", totalTime.values.v[0],  (int)numThreads );
+
+                printf("Procesing of file: ");
+                printf(wav);
+                printf(" done.\n");
+
+}

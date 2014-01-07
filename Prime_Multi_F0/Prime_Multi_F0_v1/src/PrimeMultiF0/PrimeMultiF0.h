@@ -4,11 +4,11 @@
 #include <sndfile.h> // http://www.mega-nerd.com/libsndfile/
 #include "AuditiveSystem.h"
 #include "includes.h"
-#include "MPIMatlabCommunicator.h"
-#define EXE_NAME "aswipep"
+//#include "MPIMatlabCommunicator.h"
 
-struct timespec start, end, startTotal, endTotal;
-clocksArray clocks, cycleClocks, totalTime;
+
+
+
 
 double soundLength;
 

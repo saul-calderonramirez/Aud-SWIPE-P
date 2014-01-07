@@ -1,1 +1,1 @@
-mpiexec primeMultiF0 -i chorus-male-a#3.wav  -o trumpetSimpleTest.txt -r 150:3000 -p 16  -z trumpetSimpleTestTime.csv -t 0.01
+primeMultiF0 -i chorus-male-a#3.wav  -o trumpetSimpleTest.txt -r 150:1175 -p 4 -z trumpetSimpleTestTime.csv -t 0.01 
