@@ -52,7 +52,7 @@ clocksArray unionArrays(clocksArray* arr1, clocksArray* arr2);
  * @param soundLength
  * @param wav, corresponding wav file
  * */
-void writeTimesToFile(char* testName, clocksArray* clocks, int numProcs, double soundLength, char* wav);
+void writeTimesToFile(char* testName, clocksArray* clocks, int numProcs, int winSizes, int fs, double soundLength, char* wav);
 /*
  * Calculates the time difference
  * @param timeA_p, start

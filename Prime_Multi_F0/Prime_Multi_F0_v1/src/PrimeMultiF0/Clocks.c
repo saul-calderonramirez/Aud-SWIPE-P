@@ -72,7 +72,7 @@ clocksArray unionArrays(clocksArray* arr1, clocksArray* arr2){
  * @param soundLength
  * @param wav, corresponding wav file
  * */
-void writeTimesToFile(char* testName, clocksArray* clocks, int numProcs, double soundLength, char* wav){
+void writeTimesToFile(char* testName, clocksArray* clocks, int numProcs, int winSizes, int fs, double soundLength, char* wav){
 	if(testName != NULL){
 		FILE * time_test = NULL;
 		time_test = fopen (testName, "r");
@@ -91,6 +91,8 @@ void writeTimesToFile(char* testName, clocksArray* clocks, int numProcs, double 
 			fprintf(time_test, "soundLength;");
 			fprintf(time_test, "Diff;");
 			fprintf(time_test, "SR\n");
+			fprintf(time_test, "Sampling frequency\n");
+			fprintf(time_test, "Window sizes\n");
 
 		}
 		else{
@@ -108,7 +110,9 @@ void writeTimesToFile(char* testName, clocksArray* clocks, int numProcs, double 
 		int pass = diff > 0;
 
 		fprintf(time_test, " %lf ; ", diff);
-		fprintf(time_test, "%d\n", pass);
+		fprintf(time_test, "%d ; ", pass);
+		fprintf(time_test, "%d ; ", fs);
+		fprintf(time_test, "%d\n", winSizes);
 
 		fclose(time_test);
 	}

@@ -631,8 +631,6 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
         freev(logWs);
         freev(ws);
 
-        endLocalClock(&totalTime, 0, "Total time");
-		printf("\nDone in %f seconds, with %d threads\n", totalTime.values.v[0],  (int)numThreads );
 
 
         return Sout;
@@ -818,7 +816,8 @@ void executePrimeMultiF0(int argc, char* argv[]){
                 matrix S = primeMulti_F0(wav, min, max, dt);
                 outBinaryM(S.m, S.x, S.y, out);
 
-
+                endLocalClock(&totalTime, 0, "Total time");
+                printf("\nDone in %f seconds, with %d threads\n", totalTime.values.v[0],  (int)numThreads );
 
                 printf("Procesing of file: ");
                 printf(wav);

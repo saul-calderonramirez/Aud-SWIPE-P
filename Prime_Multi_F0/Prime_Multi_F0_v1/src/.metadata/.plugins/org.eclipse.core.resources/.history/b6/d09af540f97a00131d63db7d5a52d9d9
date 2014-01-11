@@ -554,11 +554,6 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
         int i, tamX, range, maxvent, minvent, frames;
         //x contains the sound signal, reads the signal from file, fs the sampling frequency and frames are the total number of samples
         x = readSoundFile(wav, &nyquist, &fs, &soundLength, &frames);
-
-        totalTime = initClocks(1);
-        startLocalClock(&totalTime);
-
-
         //Defines the time  array
         double lt = ceil(((double)frames / (double)fs) / dt);
         t = zerov(lt);
@@ -630,11 +625,6 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
         freev(log2pc);
         freev(logWs);
         freev(ws);
-
-        endLocalClock(&totalTime, 0, "Total time");
-		printf("\nDone in %f seconds, with %d threads\n", totalTime.values.v[0],  (int)numThreads );
-
-
         return Sout;
 }
 
@@ -734,8 +724,9 @@ void executePrimeMultiF0(int argc, char* argv[]){
                 char* ptrTestFile = NULL;
                 char testFileName[FILENAME_MAX] = "test_file.csv";
                 char ptrOptArgTemp[FILENAME_MAX];
-
-
+              //  clocks = initClocks(11);
+               // cycleClocks = initClocks(9);
+                totalTime = initClocks(1);
 
                 while ((ch = getopt(argc, argv, "i:o:r:s:t:b:p:z:mnhv")) != -1) {
                         switch(ch) {
@@ -813,12 +804,14 @@ void executePrimeMultiF0(int argc, char* argv[]){
                         fprintf(stderr, "Timestep must be >= 0.001 (1 ms), set to %.3f.\n", DT);
                         dt = DT;
                 }
-
+                totalTime = initClocks(1);
+                startLocalClock(&totalTime);
 
                 matrix S = primeMulti_F0(wav, min, max, dt);
                 outBinaryM(S.m, S.x, S.y, out);
 
-
+                endLocalClock(&totalTime, 0, "Total time");
+                printf("\nDone in %f seconds, with %d threads\n", totalTime.values.v[0],  (int)numThreads );
 
                 printf("Procesing of file: ");
                 printf(wav);

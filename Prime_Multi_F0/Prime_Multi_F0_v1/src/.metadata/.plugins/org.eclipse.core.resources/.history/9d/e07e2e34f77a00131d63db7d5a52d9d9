@@ -122,7 +122,7 @@ void toogleCPU(FILE* shTest, int online, int cpu){
  * */
 
 int main(int argc, char* argv[]) {
-
+	numCPU = 0;
 	runInstrumentsTimeTestsThreadsNumber();
 	exit(EXIT_SUCCESS);
 }
