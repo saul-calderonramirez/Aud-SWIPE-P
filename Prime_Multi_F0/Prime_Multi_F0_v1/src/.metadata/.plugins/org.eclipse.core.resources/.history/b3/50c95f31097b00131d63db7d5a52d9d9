@@ -68,7 +68,7 @@ void scriptInstrumentTestFixedFile(FILE* shTest, char *ptrArchive, int min, int 
 		char ptrMainDir[200] = "input/";
 		char ptrResultsDir[200] = "Results/";
 
-		char ptrTestCSV[200] = "TimeResults/Test_NumThreads.csv";
+		char ptrTestCSV[200] = "TimeResults/Test_";
 		char *ptrPtrTest = NULL;
 		char ptrFreqRange[30] = "";
 		char ptrMin[10];
@@ -81,8 +81,10 @@ void scriptInstrumentTestFixedFile(FILE* shTest, char *ptrArchive, int min, int 
 		strcat(ptrMainDir, ptrArchive);
 
 		strcat(ptrResultsDir, ptrArchive);
-
-
+		strcat(ptrTestCSV, ptrArchive);
+		strcat(ptrTestCSV, ptrArchive);
+		strcat(ptrTestCSV, ".csv");
+		//fprintf(shTest, "mkdir %s\n", ptrResultsDir);
 		writeShCommand(shTest, ptrMainDir, ptrArchive, numThreads, ptrTestCSV, ptrResultsDir, ptrFreqRange );
 
 }
@@ -97,13 +99,12 @@ void runInstrumentsTimeTestsThreadsNumber(){
 	fprintf(shTest, "mkdir TimeResults\n" );
 	fprintf(shTest, "mkdir Results\n");
 	int numThreads = 8;
-	int maxPCs[6] = {200, 300, 500, 900, 1800, 3800};
+	int maxPCs[8] = {200, 500, 800, 1000, 1500, 2000, 2600, 4000};
 	int maxPcInd;
 
-	for(numThreads = 1; numThreads < 9; ++numThreads){
-		for(maxPcInd = 0; maxPcInd < 6; ++maxPcInd){
-			scriptInstrumentTestFixedFile( shTest, "trumpet_44100hz.wav", 150, maxPCs[maxPcInd], 44100,  numThreads * 2);
-			scriptInstrumentTestFixedFile( shTest, "chorus_male_a#3_44100hz.wav", 150, maxPCs[maxPcInd], 44100,  numThreads * 2);
+	for(maxPcInd = 0; maxPcInd < 8; ++maxPcInd){
+		for(numThreads = 1; numThreads < 9; ++numThreads){
+			scriptInstrumentTestFixedFile( shTest, "trumpet_44100hz.wav", 30, maxPCs[maxPcInd], 44100,  numThreads * 2);
 		}
 	}
 

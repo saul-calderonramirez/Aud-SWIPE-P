@@ -9,7 +9,7 @@
 
 
 
-char* ptrTestFile;
+
 double soundLength;
 
 //MPI variables needed

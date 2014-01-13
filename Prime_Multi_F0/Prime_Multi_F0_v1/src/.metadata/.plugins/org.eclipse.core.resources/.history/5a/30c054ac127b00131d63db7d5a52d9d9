@@ -91,8 +91,8 @@ void writeTimesToFile(char* testName, clocksArray* clocks, int numProcs, int win
 			fprintf(time_test, "soundLength;");
 			fprintf(time_test, "Diff;");
 			fprintf(time_test, "SR;");
-			fprintf(time_test, "Sampling_frequency;");
-			fprintf(time_test, "Window_sizes\n");
+			fprintf(time_test, "Sampling frequency;");
+			fprintf(time_test, "Window sizes\n");
 
 		}
 		else{

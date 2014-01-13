@@ -631,10 +631,9 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
         freev(logWs);
         freev(ws);
 
-        endLocalClock(&totalTime, 0, "Total_time");
+        endLocalClock(&totalTime, 0, "Total time");
 		printf("\nDone in %f seconds, with %d threads\n", totalTime.values.v[0],  (int)numThreads );
-		//writes the results to file
-		writeTimesToFile(ptrTestFile, &totalTime, numThreads, ws.x, fs, t.x, wav);
+
 
         return Sout;
 }
@@ -732,7 +731,7 @@ void executePrimeMultiF0(int argc, char* argv[]){
                 FILE* batch = NULL; // not going to be read that way,
                 char wav[FILENAME_MAX] = "<STDIN>";
                 char out[FILENAME_MAX] = "<STDOUT>";
-                ptrTestFile = NULL;
+                char* ptrTestFile = NULL;
                 char testFileName[FILENAME_MAX] = "test_file.csv";
                 char ptrOptArgTemp[FILENAME_MAX];
 
@@ -818,6 +817,7 @@ void executePrimeMultiF0(int argc, char* argv[]){
 
                 matrix S = primeMulti_F0(wav, min, max, dt);
                 outBinaryM(S.m, S.x, S.y, out);
+
 
 
                 printf("Procesing of file: ");

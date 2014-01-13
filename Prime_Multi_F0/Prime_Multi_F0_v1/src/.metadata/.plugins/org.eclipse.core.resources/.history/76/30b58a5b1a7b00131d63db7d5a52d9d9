@@ -100,10 +100,9 @@ void runInstrumentsTimeTestsThreadsNumber(){
 	int maxPCs[6] = {200, 300, 500, 900, 1800, 3800};
 	int maxPcInd;
 
-	for(numThreads = 1; numThreads < 9; ++numThreads){
-		for(maxPcInd = 0; maxPcInd < 6; ++maxPcInd){
-			scriptInstrumentTestFixedFile( shTest, "trumpet_44100hz.wav", 150, maxPCs[maxPcInd], 44100,  numThreads * 2);
-			scriptInstrumentTestFixedFile( shTest, "chorus_male_a#3_44100hz.wav", 150, maxPCs[maxPcInd], 44100,  numThreads * 2);
+	for(maxPcInd = 0; maxPcInd < 6; ++maxPcInd){
+		for(numThreads = 1; numThreads < 9; ++numThreads){
+			scriptInstrumentTestFixedFile( shTest, "trumpet_44100hz.wav", 30, maxPCs[maxPcInd], 44100,  numThreads * 2);
 		}
 	}
 

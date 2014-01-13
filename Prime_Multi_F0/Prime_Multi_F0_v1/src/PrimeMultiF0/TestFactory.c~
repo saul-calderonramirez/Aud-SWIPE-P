@@ -103,7 +103,7 @@ void runInstrumentsTimeTestsThreadsNumber(){
 	for(numThreads = 1; numThreads < 9; ++numThreads){
 		for(maxPcInd = 0; maxPcInd < 6; ++maxPcInd){
 			scriptInstrumentTestFixedFile( shTest, "trumpet_44100hz.wav", 150, maxPCs[maxPcInd], 44100,  numThreads * 2);
-			scriptInstrumentTestFixedFile( shTest, "chorus_male_a#3_44100hz.wav", 150, maxPCs[maxPcInd], 44100,  numThreads * 2);
+			scriptInstrumentTestFixedFile( shTest, "chorus_male_a#3_44100hz.wav", 30, maxPCs[maxPcInd], 44100,  numThreads * 2);
 		}
 	}
 

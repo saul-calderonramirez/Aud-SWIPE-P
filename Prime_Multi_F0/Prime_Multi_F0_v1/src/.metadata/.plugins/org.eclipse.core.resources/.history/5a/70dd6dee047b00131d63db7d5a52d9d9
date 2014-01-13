@@ -631,10 +631,9 @@ matrix primeMulti_F0(char wav[], double min, double max, double dt){
         freev(logWs);
         freev(ws);
 
-        endLocalClock(&totalTime, 0, "Total_time");
+        endLocalClock(&totalTime, 0, "Total time");
 		printf("\nDone in %f seconds, with %d threads\n", totalTime.values.v[0],  (int)numThreads );
-		//writes the results to file
-		writeTimesToFile(ptrTestFile, &totalTime, numThreads, ws.x, fs, t.x, wav);
+		writeTimesToFile(ptrTestFile, totalTime, numThreads, ws.x, fs, t.x, wav);
 
         return Sout;
 }

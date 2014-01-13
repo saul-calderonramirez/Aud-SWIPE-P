@@ -35,6 +35,11 @@ pO = 8*fs./ws; % optimal pitches for window sizes
 
 % Determine window sizes used by each pitch candidate:
 d = 1 + log2pc - log2(8*fs./ws(1));
+
+
+disp('NUMBER OF WINDOW SIZES');
+length(ws)
+
 for i=1:length(ws)
     dn = max(1,round(4*fs/pO(i))); % hop size
     % Zero-pad signal:

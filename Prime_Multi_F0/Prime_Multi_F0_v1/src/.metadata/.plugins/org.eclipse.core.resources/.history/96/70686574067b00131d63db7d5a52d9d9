@@ -90,28 +90,28 @@ void writeTimesToFile(char* testName, clocksArray* clocks, int numProcs, int win
 			fprintf(time_test, "NumProcs;");
 			fprintf(time_test, "soundLength;");
 			fprintf(time_test, "Diff;");
-			fprintf(time_test, "SR;");
-			fprintf(time_test, "Sampling_frequency;");
-			fprintf(time_test, "Window_sizes\n");
+			fprintf(time_test, "SR\n");
+			fprintf(time_test, "Sampling frequency\n");
+			fprintf(time_test, "Window sizes\n");
 
 		}
 		else{
 			time_test = fopen (testName, "a+");
 		}
 
-		fprintf(time_test, "%s;", wav);
+		fprintf(time_test, "%s ;", wav);
 		for(i = 0; i < clocks->values.x; ++i){
-			fprintf(time_test, "%lf;", clocks->values.v[i]);
+			fprintf(time_test, " %lf ; ", clocks->values.v[i]);
 		}
-		fprintf(time_test, "%d;", numProcs);
-		fprintf(time_test, "%lf;", soundLength);
+		fprintf(time_test, " %d ; ", numProcs);
+		fprintf(time_test, " %lf ; ", soundLength);
 		double diff = soundLength - clocks->values.v[clocks->values.x-1];
 
 		int pass = diff > 0;
 
-		fprintf(time_test, "%lf;", diff);
-		fprintf(time_test, "%d;", pass);
-		fprintf(time_test, "%d;", fs);
+		fprintf(time_test, " %lf ; ", diff);
+		fprintf(time_test, "%d ; ", pass);
+		fprintf(time_test, "%d ; ", fs);
 		fprintf(time_test, "%d\n", winSizes);
 
 		fclose(time_test);
